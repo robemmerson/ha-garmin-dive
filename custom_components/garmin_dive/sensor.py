@@ -168,6 +168,11 @@ class DiveLogYearSensor(GarminDiveAccountEntity, SensorEntity):
     _attr_translation_key = "dive_log_year"
     _attr_icon = "mdi:timeline-clock"
 
+    # The full dive log lives in `dives` and can exceed HA's 16 KB attribute
+    # threshold for the recorder. Tell the recorder to skip persisting it —
+    # the live state machine still serves the full list to dashboards.
+    _unrecorded_attributes = frozenset({"dives"})
+
     def __init__(self, coordinator: GarminDiveCoordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._account_id}_dive_log_year"
@@ -187,17 +192,7 @@ class DiveLogYearSensor(GarminDiveAccountEntity, SensorEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         if not self.coordinator.data:
             return {"dives": []}
-        # HA caps state attributes at 16 KB; an unfiltered list of 60+ dives
-        # breaches that and the recorder drops the attribute. Window to the
-        # current and previous calendar year, which matches the default
-        # `current_year_plus_one` history-scope option.
-        years = {date.today().year, date.today().year - 1}
-        dives_payload = [
-            self._dive_to_card(d)
-            for d in self.coordinator.data.dives
-            if datetime.fromisoformat(d.start_time).year in years
-        ]
-        return {"dives": dives_payload}
+        return {"dives": [self._dive_to_card(d) for d in self.coordinator.data.dives]}
 
     def _dive_to_card(self, d: Dive) -> dict[str, Any]:
         raw = d.raw

@@ -27,7 +27,7 @@ async def test_last_dive_state_and_attributes(hass, load_fixture):
     coord = make_fake_coordinator(hass=hass, data=data)
     sensor = LastDiveSensor(coord)
 
-    assert sensor.native_value == "Elphinstone (South side)"
+    assert sensor.native_value == "Test Site Alpha"
     attrs = sensor.extra_state_attributes
     assert attrs["max_depth"] == pytest.approx(26.373)
     assert attrs["bottom_time_minutes"] == pytest.approx(2747.59 / 60)
@@ -153,8 +153,8 @@ async def test_gear_days_until_service(hass, load_fixture):
     )
     coord = make_fake_coordinator(hass=hass, data=data)
     sensor = GearDaysUntilServiceSensor(coord, gear_id=141548)
-    # nextServiceDate=2027-04-04, today=2026-05-03 -> 336 days
-    assert sensor.native_value == 336
+    # nextServiceDate=2027-01-01, today=2026-05-03 -> 243 days
+    assert sensor.native_value == 243
 
 
 async def test_dive_computer_sub_devices(hass, load_fixture):

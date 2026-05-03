@@ -7,12 +7,12 @@
   "model": "Descent T1",
   "serialNumber": "09144",
   "antChannelId": 356952664,
-  "dateOfFirstUse": "2022-08-20",
-  "purchasedFrom": "Mike's Dive Store",
-  "purchaseDate": "2022-07-29",
+  "dateOfFirstUse": "2022-01-01",
+  "purchasedFrom": "Test Dive Shop",
+  "purchaseDate": "2022-01-01",
   "status": "ACTIVE",
-  "creationTs": "2023-04-06T01:20:01Z",
-  "lastModifiedTs": "2023-04-19T03:24:14Z",
+  "creationTs": "2022-01-01T00:00:00Z",
+  "lastModifiedTs": "2023-01-01T00:00:00Z",
   "stats": { "numAssociatedDives": 36, "totalAssociatedDiveTime": 108558.86 },
   "media": { "images": [] }
 }

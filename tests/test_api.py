@@ -36,7 +36,7 @@ async def test_get_dive_summary_returns_decoded_json(
     )
     result = await client.get_dive_summary(page=0, results_per_page=1)
     assert result["totalCount"] == 68
-    assert result["diveActivities"][0]["name"] == "Elphinstone (South side)"
+    assert result["diveActivities"][0]["name"] == "Test Site Alpha"
 
 
 async def test_get_dive_summary_sends_bearer_and_app_headers(
@@ -123,7 +123,7 @@ async def test_get_gear_detail(
     )
     detail = await client.get_gear_detail(gear_id=141548, current_user_date="2026-05-03")
     assert detail["brand"] == "Atomic Aquatics"
-    assert detail["nextServiceDate"] == "2027-04-04"
+    assert detail["nextServiceDate"] == "2027-01-01"
 
 
 async def test_graphql_posts_operation_and_variables(

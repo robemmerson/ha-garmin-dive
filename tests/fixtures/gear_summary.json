@@ -3,18 +3,18 @@
     "gearId": 463947,
     "name": "Deep Diver",
     "type": "CERTIFICATION",
-    "dateOfFirstUse": "2025-08-21",
+    "dateOfFirstUse": "2025-01-01",
     "status": "ACTIVE",
-    "creationTs": "2025-08-22T10:45:48Z",
+    "creationTs": "2025-01-01T00:00:00Z",
     "stats": { "numAssociatedDives": 3, "totalAssociatedDiveTime": 8794.561 }
   },
   {
     "gearId": 247811,
     "name": "Underwater iPhone Light",
     "type": "LIGHT",
-    "dateOfFirstUse": "2024-04-06",
+    "dateOfFirstUse": "2024-01-01",
     "status": "ACTIVE",
-    "creationTs": "2024-04-07T07:51:58Z",
+    "creationTs": "2024-01-01T00:00:00Z",
     "image": {
       "imageUUID": "315aa699-ea9b-4323-8177-3d8a77b28e24",
       "inappropriateStatus": "PASSED_BY_ALGORITHM",
@@ -45,10 +45,10 @@
     "gearId": 141548,
     "name": "Atomic B2 Regulator",
     "type": "REGULATOR",
-    "dateOfFirstUse": "2023-04-05",
+    "dateOfFirstUse": "2023-01-01",
     "status": "ACTIVE",
-    "creationTs": "2023-01-08T20:57:36Z",
-    "lastModifiedTs": "2025-04-06T10:43:38Z",
+    "creationTs": "2023-01-01T00:00:00Z",
+    "lastModifiedTs": "2025-01-02T00:00:00Z",
     "stats": { "numAssociatedDives": 31, "totalAssociatedDiveTime": 95690.84 }
   }
 ]

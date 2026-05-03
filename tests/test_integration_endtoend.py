@@ -112,7 +112,7 @@ async def test_authenticated_pipeline_returns_full_coordinator_data(
     # Real data flowed through every layer
     assert data.total_dives == 68, "summary.totalCount surfaced"
     assert len(data.dives) == 3, "all 3 dives populated"
-    assert data.dives[0].name == "Elphinstone (South side)", "DTO accessor works"
+    assert data.dives[0].name == "Test Site Alpha", "DTO accessor works"
     assert data.dive_tags["RECREATIONAL"] == 45, "tags surfaced"
     assert {d.product_display_name for d in data.devices} == {
         "Descent MK2i",

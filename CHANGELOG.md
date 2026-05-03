@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/robemmerson/ha-garmin-dive/compare/v0.3.0...v0.3.1) (2026-05-03)
+
+
+### Bug Fixes
+
+* address HA runtime errors from production deployment ([97f9773](https://github.com/robemmerson/ha-garmin-dive/commit/97f9773956f734b419dec7ca8c8d7ec478514df0))
+
 ## [0.3.0](https://github.com/robemmerson/ha-garmin-dive/compare/v0.2.0...v0.3.0) (2026-05-03)
 
 

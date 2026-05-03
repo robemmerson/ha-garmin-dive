@@ -1,9 +1,9 @@
 """Tests for GarminDiveClient HTTP behaviour."""
+
 from __future__ import annotations
 
-from typing import Any
-
 import json
+from typing import Any
 
 import aiohttp
 import pytest
@@ -16,6 +16,7 @@ from custom_components.garmin_dive.api import GarminDiveClient
 async def client(load_fixture):
     """Yield a GarminDiveClient backed by a fresh aiohttp session."""
     async with aiohttp.ClientSession() as session:
+
         async def get_token() -> str:
             return "test-token"
 
@@ -63,7 +64,9 @@ async def test_get_dive_devices(
         "gcs.garmin.com",
         "/diving/v1/dive/devices",
         "GET",
-        aresponses.Response(status=200, text=__import__("json").dumps(load_fixture("dive_devices"))),
+        aresponses.Response(
+            status=200, text=__import__("json").dumps(load_fixture("dive_devices"))
+        ),
     )
     devices = await client.get_dive_devices()
     assert isinstance(devices, list)
@@ -136,15 +139,20 @@ async def test_graphql_posts_operation_and_variables(
         )
 
     aresponses.add("gcs.garmin.com", "/diving/graphql/query", "POST", handler)
+    query_str = (
+        "query DiveImagesByDateRange("
+        "$playerId: Long!, $start: LocalDate!, $end: LocalDate!) { ... }"
+    )
     result = await client.graphql(
         operation_name="DiveImagesByDateRange",
-        query="query DiveImagesByDateRange($playerId: Long!, $start: LocalDate!, $end: LocalDate!) { ... }",
+        query=query_str,
         variables={"playerId": 106627261, "start": "2026-01-01", "end": "2026-12-31"},
     )
     assert captured["body"]["operationName"] == "DiveImagesByDateRange"
     assert captured["body"]["variables"]["playerId"] == 106627261
     assert "extensions" in captured["body"]
-    assert result["data"]["diveImages"]["items"][0]["imageUUID"] == "3730581e-c80e-4c19-8513-cd403e1c72a5"
+    expected_uuid = "3730581e-c80e-4c19-8513-cd403e1c72a5"
+    assert result["data"]["diveImages"]["items"][0]["imageUUID"] == expected_uuid
 
 
 async def test_get_dive_photos_by_year(

@@ -1,4 +1,5 @@
 """HTTP client for Garmin Dive APIs (no Home Assistant imports here)."""
+
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
@@ -80,9 +81,7 @@ class GarminDiveClient:
         params.extend(("gear-types", t) for t in GEAR_TYPES)
         return await self._request("GET", HOST_GCS, PATH_GEAR_SUMMARY, params=params)
 
-    async def get_gear_detail(
-        self, *, gear_id: int, current_user_date: str
-    ) -> dict[str, Any]:
+    async def get_gear_detail(self, *, gear_id: int, current_user_date: str) -> dict[str, Any]:
         return await self._request(
             "GET",
             HOST_GCS,

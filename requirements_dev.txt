@@ -8,6 +8,6 @@ aresponses>=3.0
 ruff>=0.7
 mypy>=1.20
 codespell>=2.4
-pre-commit>=4.0
+pre-commit>=4.6.0
 ha-garmin>=0.1.19,<0.2
 freezegun>=1.4

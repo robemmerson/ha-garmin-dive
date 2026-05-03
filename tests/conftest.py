@@ -1,4 +1,5 @@
 """Shared pytest fixtures for ha-garmin-dive."""
+
 from __future__ import annotations
 
 import asyncio

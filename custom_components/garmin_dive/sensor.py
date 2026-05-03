@@ -12,7 +12,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfLength, UnitOfTime
+from homeassistant.const import EntityCategory, UnitOfLength, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -292,7 +292,7 @@ class GearServiceStatusSensor(_GearEntityBase, SensorEntity):
     _attr_translation_key = "gear_service_status"
     _attr_icon = "mdi:tools"
     _attr_device_class = SensorDeviceClass.ENUM
-    _attr_options: ClassVar[list[str]] = ["not_due", "due", "overdue"]
+    _attr_options: ClassVar[list[str]] = ["not_due", "due", "overdue"]  # type: ignore[misc]
 
     def __init__(self, coordinator: GarminDiveCoordinator, *, gear_id: int) -> None:
         super().__init__(coordinator, gear_id=gear_id)
@@ -385,7 +385,7 @@ class GearPurchasePriceSensor(_GearEntityBase, SensorEntity):
     _attr_translation_key = "gear_purchase_price"
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_state_class = SensorStateClass.TOTAL
-    _attr_entity_category = "diagnostic"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_icon = "mdi:cash"
 
     def __init__(self, coordinator: GarminDiveCoordinator, *, gear_id: int) -> None:
@@ -470,7 +470,7 @@ class _DiveComputerEntityBase(GarminDiveSubDeviceEntity):
 class DiveComputerGearTrackingSensor(_DiveComputerEntityBase, SensorEntity):
     _attr_translation_key = "dive_computer_gear_tracking_status"
     _attr_device_class = SensorDeviceClass.ENUM
-    _attr_options: ClassVar[list[str]] = ["tracked", "dismissed"]
+    _attr_options: ClassVar[list[str]] = ["tracked", "dismissed"]  # type: ignore[misc]
     _attr_icon = "mdi:watch"
 
     def __init__(self, coordinator: GarminDiveCoordinator, *, serial: str) -> None:
@@ -490,7 +490,7 @@ class DiveComputerGearTrackingSensor(_DiveComputerEntityBase, SensorEntity):
 
 class DiveComputerSerialSensor(_DiveComputerEntityBase, SensorEntity):
     _attr_translation_key = "dive_computer_serial_number"
-    _attr_entity_category = "diagnostic"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_icon = "mdi:identifier"
 
     def __init__(self, coordinator: GarminDiveCoordinator, *, serial: str) -> None:
@@ -504,7 +504,7 @@ class DiveComputerSerialSensor(_DiveComputerEntityBase, SensorEntity):
 
 class DiveComputerPartNumberSensor(_DiveComputerEntityBase, SensorEntity):
     _attr_translation_key = "dive_computer_part_number"
-    _attr_entity_category = "diagnostic"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_icon = "mdi:barcode"
 
     def __init__(self, coordinator: GarminDiveCoordinator, *, serial: str) -> None:

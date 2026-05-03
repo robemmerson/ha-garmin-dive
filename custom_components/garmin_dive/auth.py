@@ -54,6 +54,7 @@ class GarminDiveAuth:
             await hass.async_add_executor_job(self._ha.complete_mfa, code)
 
         connect_token = self._ha.di_token  # Connect-API bearer
+        assert connect_token is not None, "ha-garmin login completed without setting di_token"
         token_resp = await self._api.exchange_dive_audience(connect_bearer=connect_token)
         self._apply_dive_token(token_resp)
 

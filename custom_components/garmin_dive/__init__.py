@@ -40,7 +40,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return await auth.get_dive_token()
 
     api = GarminDiveClient(session=session, get_token=_get_token)
-    auth = GarminDiveAuth.from_entry_data(entry.data, ha_auth=ha_auth, api=api)
+    auth = GarminDiveAuth.from_entry_data(dict(entry.data), ha_auth=ha_auth, api=api)
 
     # Re-load the persisted ha-garmin session so reauth (or DIVE-token
     # refresh fallback) doesn't always require re-typing the password.

@@ -1,4 +1,5 @@
 """Constants for the Garmin Dive integration."""
+
 from __future__ import annotations
 
 from typing import Final
@@ -74,9 +75,7 @@ GEAR_TYPES: Final = (
 
 # Gear types where service tracking is meaningful. CAMERA, LIGHT,
 # CERTIFICATION, etc. typically have no service interval.
-SERVICEABLE_GEAR_TYPES: Final = frozenset(
-    {"REGULATOR", "BCD", "TRANSMITTER", "REBREATHER", "TANK"}
-)
+SERVICEABLE_GEAR_TYPES: Final = frozenset({"REGULATOR", "BCD", "TRANSMITTER", "REBREATHER", "TANK"})
 
 # --- Options keys ------------------------------------------------------------
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import TYPE_CHECKING, Any
@@ -180,7 +181,7 @@ async def build_data(
     )
 
 
-def _collect_gear_photo_records(gear_items: list[GearItem]):
+def _collect_gear_photo_records(gear_items: list[GearItem]) -> Iterator[PhotoRecord]:
     for g in gear_items:
         # Summary-level image (single)
         img = g.summary_raw.get("image")
@@ -192,7 +193,7 @@ def _collect_gear_photo_records(gear_items: list[GearItem]):
                 yield PhotoRecord.from_garmin_image(img)
 
 
-def _collect_dive_photo_records(graphql_resp: dict[str, Any]):
+def _collect_dive_photo_records(graphql_resp: dict[str, Any]) -> Iterator[PhotoRecord]:
     items = graphql_resp.get("data", {}).get("diveImages", {}).get("items", []) or []
     for item in items:
         yield PhotoRecord.from_garmin_image(item)

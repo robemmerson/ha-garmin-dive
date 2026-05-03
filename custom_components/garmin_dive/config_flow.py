@@ -53,7 +53,7 @@ class GarminDiveConfigFlow(ConfigFlow, domain=DOMAIN):
         self._password: str | None = None
         self._auth: GarminDiveAuth | None = None
         self._mfa_future: asyncio.Future[str] | None = None
-        self._login_task: asyncio.Task | None = None
+        self._login_task: asyncio.Task[dict[str, Any]] | None = None
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is None:
@@ -81,6 +81,9 @@ class GarminDiveConfigFlow(ConfigFlow, domain=DOMAIN):
         return await self._finalize(profile)
 
     async def _start_login(self) -> ConfigFlowResult:
+        assert self._email is not None and self._password is not None
+        email = self._email
+        password = self._password
         ha_auth = GarminAuth()
         api = GarminDiveClient(
             session=async_get_clientsession(self.hass),
@@ -96,10 +99,11 @@ class GarminDiveConfigFlow(ConfigFlow, domain=DOMAIN):
             return await self._mfa_future
 
         async def run_login() -> dict[str, Any]:
+            assert self._auth is not None
             return await self._auth.login(
                 hass=self.hass,
-                email=self._email,
-                password=self._password,
+                email=email,
+                password=password,
                 mfa_provider=mfa_provider,
             )
 
@@ -163,12 +167,12 @@ class GarminDiveConfigFlow(ConfigFlow, domain=DOMAIN):
 
 class GarminDiveOptionsFlow(OptionsFlow):
     def __init__(self, config_entry: ConfigEntry) -> None:
-        self.config_entry = config_entry
+        self._config_entry = config_entry
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
-        opts = self.config_entry.options
+        opts = self._config_entry.options
         schema = vol.Schema(
             {
                 vol.Required(

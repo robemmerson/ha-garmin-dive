@@ -10,8 +10,13 @@ from .const import (
     APP_USER_AGENT,
     APP_X_APP_VER,
     APP_X_LANG,
+    GEAR_TYPES,
     HOST_GCS,
+    PATH_DIVE_DEVICES,
     PATH_DIVE_SUMMARY,
+    PATH_DIVE_TAGS,
+    PATH_GEAR_DETAIL,
+    PATH_GEAR_SUMMARY,
 )
 
 GetTokenFn = Callable[[], Awaitable[str]]
@@ -59,4 +64,27 @@ class GarminDiveClient:
             HOST_GCS,
             PATH_DIVE_SUMMARY,
             params={"requestedPage": page, "resultsPerPage": results_per_page},
+        )
+
+    async def get_dive_devices(self) -> list[dict[str, Any]]:
+        return await self._request("GET", HOST_GCS, PATH_DIVE_DEVICES)
+
+    async def get_dive_tags(self) -> dict[str, int]:
+        return await self._request("GET", HOST_GCS, PATH_DIVE_TAGS)
+
+    async def get_gear_summary(self, *, current_user_date: str) -> list[dict[str, Any]]:
+        # The iOS app sends every supported gear type as a separate `gear-types`
+        # query param. Build the param list as ordered tuples to preserve repeats.
+        params: list[tuple[str, Any]] = [("current-user-date", current_user_date)]
+        params.extend(("gear-types", t) for t in GEAR_TYPES)
+        return await self._request("GET", HOST_GCS, PATH_GEAR_SUMMARY, params=params)
+
+    async def get_gear_detail(
+        self, *, gear_id: int, current_user_date: str
+    ) -> dict[str, Any]:
+        return await self._request(
+            "GET",
+            HOST_GCS,
+            PATH_GEAR_DETAIL.format(gear_id=gear_id),
+            params={"current-user-date": current_user_date},
         )

@@ -52,3 +52,70 @@ async def test_get_dive_summary_sends_bearer_and_app_headers(
     assert captured["X-Lang"] == "en"
     assert captured["Accept"] == "application/json"
     assert captured["User-Agent"].startswith("Dive/3.4")
+
+
+async def test_get_dive_devices(
+    aresponses: ResponsesMockServer, client: GarminDiveClient, load_fixture
+):
+    aresponses.add(
+        "gcs.garmin.com",
+        "/diving/v1/dive/devices",
+        "GET",
+        aresponses.Response(status=200, text=__import__("json").dumps(load_fixture("dive_devices"))),
+    )
+    devices = await client.get_dive_devices()
+    assert isinstance(devices, list)
+    assert devices[0]["productDisplayName"] == "Descent MK2i"
+
+
+async def test_get_dive_tags(
+    aresponses: ResponsesMockServer, client: GarminDiveClient, load_fixture
+):
+    aresponses.add(
+        "gcs.garmin.com",
+        "/diving/v1/dive/tags",
+        "GET",
+        aresponses.Response(status=200, text=__import__("json").dumps(load_fixture("dive_tags"))),
+    )
+    tags = await client.get_dive_tags()
+    assert tags["RECREATIONAL"] == 45
+
+
+async def test_get_gear_summary_passes_all_gear_types(
+    aresponses: ResponsesMockServer, client: GarminDiveClient, load_fixture
+):
+    captured_qs: list[tuple[str, str]] = []
+
+    async def handler(request):
+        captured_qs.extend(request.query.items())
+        return aresponses.Response(
+            status=200,
+            text=__import__("json").dumps(load_fixture("gear_summary")),
+        )
+
+    aresponses.add("gcs.garmin.com", "/diving/v1/gear/summary", "GET", handler)
+    result = await client.get_gear_summary(current_user_date="2026-05-03")
+    assert isinstance(result, list)
+    assert any(item["gearId"] == 247811 for item in result)
+    # Every gear type should have been sent as a `gear-types` query param.
+    types_sent = {v for k, v in captured_qs if k == "gear-types"}
+    assert "REGULATOR" in types_sent
+    assert "OTHER" in types_sent
+    assert len(types_sent) >= 25
+
+
+async def test_get_gear_detail(
+    aresponses: ResponsesMockServer, client: GarminDiveClient, load_fixture
+):
+    aresponses.add(
+        "gcs.garmin.com",
+        "/diving/v1/gear/141548",
+        "GET",
+        aresponses.Response(
+            status=200,
+            text=__import__("json").dumps(load_fixture("gear_detail_regulator")),
+        ),
+    )
+    detail = await client.get_gear_detail(gear_id=141548, current_user_date="2026-05-03")
+    assert detail["brand"] == "Atomic Aquatics"
+    assert detail["nextServiceDate"] == "2027-04-04"

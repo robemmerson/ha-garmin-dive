@@ -4,8 +4,8 @@
   "pageNumber": 0,
   "diveActivities": [
     {
-      "id": 23285230,
-      "connectActivityId": 20180546488,
+      "id": 10000001,
+      "connectActivityId": 99000001,
       "name": "Test Site Alpha",
       "diveType": "SINGLE_GAS",
       "number": 68,
@@ -30,8 +30,8 @@
       "contentVisibility": "PRIVATE"
     },
     {
-      "id": 23285231,
-      "connectActivityId": 20180546492,
+      "id": 10000002,
+      "connectActivityId": 99000002,
       "name": "Test Site Beta",
       "diveType": "SINGLE_GAS",
       "entryLoc": { "latitude": 0.0, "longitude": 0.0 },
@@ -57,8 +57,8 @@
       "contentVisibility": "PRIVATE"
     },
     {
-      "id": 23261609,
-      "connectActivityId": 20170276106,
+      "id": 10000003,
+      "connectActivityId": 99000003,
       "name": "Test Site Gamma",
       "diveType": "SINGLE_GAS",
       "entryLoc": { "latitude": 0.0, "longitude": 0.0 },

@@ -24,12 +24,12 @@ def test_version_to_size_mapping():
 async def test_resolve_path_uses_account_short_and_uuid(tmp_path: Path):
     cache = PhotoCache(www_dir=tmp_path, account_short="abcd1234")
     p = cache.resolve_path(
-        image_uuid="3730581e-c80e-4c19-8513-cd403e1c72a5",
+        image_uuid="00000000-0000-4000-8000-000000000001",
         size="medium",
         ext="jpeg",
     )
     expected = (
-        tmp_path / "garmin_dive" / "abcd1234" / "3730581e-c80e-4c19-8513-cd403e1c72a5_medium.jpeg"
+        tmp_path / "garmin_dive" / "abcd1234" / "00000000-0000-4000-8000-000000000001_medium.jpeg"
     )
     assert p == expected
 
@@ -50,13 +50,13 @@ async def test_download_records_writes_files_idempotently(
         aresponses.Response(status=200, body=b"\xff\xd8\xff" + b"x" * 100),
     )
     record = PhotoRecord(
-        image_uuid="3730581e",
+        image_uuid="fixture-aaa",
         urls={"medium": ("https://example.invalid/img1.jpeg", "jpeg")},
     )
     async with aiohttp.ClientSession() as session:
         cache = PhotoCache(www_dir=tmp_path, account_short="abcd1234")
         await cache.download_records([record], session=session)
-    f = tmp_path / "garmin_dive" / "abcd1234" / "3730581e_medium.jpeg"
+    f = tmp_path / "garmin_dive" / "abcd1234" / "fixture-aaa_medium.jpeg"
     assert f.exists()
     assert f.read_bytes().startswith(b"\xff\xd8\xff")
 

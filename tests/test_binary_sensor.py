@@ -39,5 +39,5 @@ async def test_new_dive_available_latches_until_acknowledged(hass, load_fixture)
     coord.latest_dive_acknowledged_id = None
     sensor = NewDiveAvailableBinarySensor(coord)
     assert sensor.is_on is True
-    coord.latest_dive_acknowledged_id = 23285230  # latest dive id
+    coord.latest_dive_acknowledged_id = 10000001  # latest dive id
     assert sensor.is_on is False

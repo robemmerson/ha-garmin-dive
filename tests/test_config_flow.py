@@ -21,7 +21,7 @@ async def test_user_step_happy_path(hass, social_profile_payload):
     with patch("custom_components.garmin_dive.config_flow.GarminDiveAuth") as mock_cls:
         instance = mock_cls.return_value
         instance.login = AsyncMock(return_value=social_profile_payload)
-        instance.serialize = MagicMock(return_value={"profile_id": 106627261})
+        instance.serialize = MagicMock(return_value={"profile_id": 999000111})
         instance.save_ha_garmin_session = AsyncMock()
 
         result = await hass.config_entries.flow.async_init(
@@ -36,7 +36,7 @@ async def test_user_step_happy_path(hass, social_profile_payload):
         )
         assert result["type"] == FlowResultType.CREATE_ENTRY
         assert result["title"].startswith("Garmin Dive")
-        assert result["data"]["profile_id"] == 106627261
+        assert result["data"]["profile_id"] == 999000111
 
 
 async def test_user_step_invalid_credentials(hass):
@@ -59,7 +59,7 @@ async def test_unique_id_is_profile_id(hass, social_profile_payload):
     with patch("custom_components.garmin_dive.config_flow.GarminDiveAuth") as mock_cls:
         instance = mock_cls.return_value
         instance.login = AsyncMock(return_value=social_profile_payload)
-        instance.serialize = MagicMock(return_value={"profile_id": 106627261})
+        instance.serialize = MagicMock(return_value={"profile_id": 999000111})
         instance.save_ha_garmin_session = AsyncMock()
 
         result = await hass.config_entries.flow.async_init(
@@ -70,4 +70,4 @@ async def test_unique_id_is_profile_id(hass, social_profile_payload):
             {"email": "test@example.invalid", "password": "secret"},
         )
         entry = result["result"]
-        assert entry.unique_id == "106627261"
+        assert entry.unique_id == "999000111"

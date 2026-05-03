@@ -16,25 +16,25 @@
     "status": "ACTIVE",
     "creationTs": "2024-01-01T00:00:00Z",
     "image": {
-      "imageUUID": "315aa699-ea9b-4323-8177-3d8a77b28e24",
+      "imageUUID": "00000000-0000-4000-8000-000000000003",
       "inappropriateStatus": "PASSED_BY_ALGORITHM",
       "versions": [
         {
           "version": "SMALL_THUMBNAIL",
-          "key": "315aa699-smth.jpeg",
-          "url": "https://example.invalid/315aa699-smth.jpeg?sig=test",
+          "key": "fixture-ccc-smth.jpeg",
+          "url": "https://example.invalid/fixture-ccc-smth.jpeg?sig=test",
           "expiresAt": "2026-05-04T02:02:32Z"
         },
         {
           "version": "MEDIUM_FEED",
-          "key": "315aa699-mdfd.jpeg",
-          "url": "https://example.invalid/315aa699-mdfd.jpeg?sig=test",
+          "key": "fixture-ccc-mdfd.jpeg",
+          "url": "https://example.invalid/fixture-ccc-mdfd.jpeg?sig=test",
           "expiresAt": "2026-05-04T02:02:32Z"
         },
         {
           "version": "LARGE",
-          "key": "315aa699-larg.jpeg",
-          "url": "https://example.invalid/315aa699-larg.jpeg?sig=test",
+          "key": "fixture-ccc-larg.jpeg",
+          "url": "https://example.invalid/fixture-ccc-larg.jpeg?sig=test",
           "expiresAt": "2026-05-04T02:02:32Z"
         }
       ]

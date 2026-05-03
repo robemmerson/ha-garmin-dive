@@ -27,7 +27,7 @@
   - HACS publishing: <https://www.hacs.xyz/docs/publish/integration>
   - hassfest: <https://developers.home-assistant.io/docs/creating_integration_manifest>
   - ha-garmin library: <https://pypi.org/project/ha-garmin/> (the active replacement for the deprecated [garth](https://github.com/matin/garth/discussions/222))
-- **Working directory:** `/Users/rob.emmerson/git/ha-garmin-dive` (already initialised as a git repo with `main` branch).
+- **Working directory:** `<repo-root>/ha-garmin-dive` (already initialised as a git repo with `main` branch).
 
 ---
 
@@ -550,8 +550,8 @@ def auto_enable_custom_integrations(enable_custom_integrations):
   "pageNumber": 0,
   "diveActivities": [
     {
-      "id": 23285230,
-      "connectActivityId": 20180546488,
+      "id": 10000001,
+      "connectActivityId": 99000001,
       "name": "Test Site Alpha",
       "diveType": "SINGLE_GAS",
       "number": 68,
@@ -591,8 +591,8 @@ def auto_enable_custom_integrations(enable_custom_integrations):
   "pageNumber": 0,
   "diveActivities": [
     {
-      "id": 23285230,
-      "connectActivityId": 20180546488,
+      "id": 10000001,
+      "connectActivityId": 99000001,
       "name": "Test Site Alpha",
       "diveType": "SINGLE_GAS",
       "number": 68,
@@ -617,8 +617,8 @@ def auto_enable_custom_integrations(enable_custom_integrations):
       "contentVisibility": "PRIVATE"
     },
     {
-      "id": 23285231,
-      "connectActivityId": 20180546492,
+      "id": 10000002,
+      "connectActivityId": 99000002,
       "name": "Test Site Beta",
       "diveType": "SINGLE_GAS",
       "entryLoc": { "latitude": 0.0, "longitude": 0.0 },
@@ -644,8 +644,8 @@ def auto_enable_custom_integrations(enable_custom_integrations):
       "contentVisibility": "PRIVATE"
     },
     {
-      "id": 23261609,
-      "connectActivityId": 20170276106,
+      "id": 10000003,
+      "connectActivityId": 99000003,
       "name": "Test Site Gamma",
       "diveType": "SINGLE_GAS",
       "entryLoc": { "latitude": 0.0, "longitude": 0.0 },
@@ -682,8 +682,8 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     "imageUrl": "https://example.invalid/mk2i.png",
     "productDisplayName": "Descent MK2i",
     "partNumber": "006-B3258-00",
-    "deviceVersionPk": 904332,
-    "serialNumber": 3403334227,
+    "deviceVersionPk": 10100100,
+    "serialNumber": 1000000001,
     "type": "DIVE_COMPUTER",
     "gearTrackingStatus": "TRACKED",
     "deviceDismissed": false
@@ -691,7 +691,7 @@ def auto_enable_custom_integrations(enable_custom_integrations):
   {
     "imageUrl": "https://example.invalid/t1.png",
     "productDisplayName": "Descent T1",
-    "antChannelId": 356952664,
+    "antChannelId": 10100200,
     "type": "TRANSMITTER",
     "gearTrackingStatus": "TRACKED",
     "deviceDismissed": false
@@ -699,8 +699,8 @@ def auto_enable_custom_integrations(enable_custom_integrations):
   {
     "imageUrl": "https://example.invalid/t1.png",
     "productDisplayName": "Descent T1",
-    "serialNumber": 3399109144,
-    "antChannelId": 356952664,
+    "serialNumber": 1000000002,
+    "antChannelId": 10100200,
     "type": "TRANSMITTER",
     "gearTrackingStatus": "TRACKED",
     "deviceDismissed": false
@@ -758,25 +758,25 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     "status": "ACTIVE",
     "creationTs": "2024-01-01T00:00:00Z",
     "image": {
-      "imageUUID": "315aa699-ea9b-4323-8177-3d8a77b28e24",
+      "imageUUID": "00000000-0000-4000-8000-000000000003",
       "inappropriateStatus": "PASSED_BY_ALGORITHM",
       "versions": [
         {
           "version": "SMALL_THUMBNAIL",
-          "key": "315aa699-smth.jpeg",
-          "url": "https://example.invalid/315aa699-smth.jpeg?sig=test",
+          "key": "fixture-ccc-smth.jpeg",
+          "url": "https://example.invalid/fixture-ccc-smth.jpeg?sig=test",
           "expiresAt": "2026-05-04T02:02:32Z"
         },
         {
           "version": "MEDIUM_FEED",
-          "key": "315aa699-mdfd.jpeg",
-          "url": "https://example.invalid/315aa699-mdfd.jpeg?sig=test",
+          "key": "fixture-ccc-mdfd.jpeg",
+          "url": "https://example.invalid/fixture-ccc-mdfd.jpeg?sig=test",
           "expiresAt": "2026-05-04T02:02:32Z"
         },
         {
           "version": "LARGE",
-          "key": "315aa699-larg.jpeg",
-          "url": "https://example.invalid/315aa699-larg.jpeg?sig=test",
+          "key": "fixture-ccc-larg.jpeg",
+          "url": "https://example.invalid/fixture-ccc-larg.jpeg?sig=test",
           "expiresAt": "2026-05-04T02:02:32Z"
         }
       ]
@@ -805,7 +805,7 @@ def auto_enable_custom_integrations(enable_custom_integrations):
   "type": "REGULATOR",
   "brand": "Atomic Aquatics",
   "model": "B2",
-  "serialNumber": "1CA0062",
+  "serialNumber": "TEST-REG-1",
   "dueIndicator": "NOT_DUE",
   "lastServiceDate": "2025-01-01",
   "serviceIntervalDays": 730,
@@ -867,8 +867,8 @@ def auto_enable_custom_integrations(enable_custom_integrations):
   "desc": "Descent T1",
   "brand": "Garmin",
   "model": "Descent T1",
-  "serialNumber": "09144",
-  "antChannelId": 356952664,
+  "serialNumber": "TEST-XMTR-1",
+  "antChannelId": 10100200,
   "dateOfFirstUse": "2022-01-01",
   "purchasedFrom": "Test Dive Shop",
   "purchaseDate": "2022-01-01",
@@ -913,9 +913,9 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 
 ```json
 {
-  "id": 400994503,
+  "id": 99900099,
   "garminGUID": "00000000-0000-0000-0000-000000000000",
-  "profileId": 106627261,
+  "profileId": 999000111,
   "displayName": "test-display-name",
   "fullName": "Test User",
   "userName": "test@example.invalid",
@@ -940,37 +940,37 @@ def auto_enable_custom_integrations(enable_custom_integrations):
       "items": [
         {
           "__typename": "Image",
-          "imageUUID": "3730581e-c80e-4c19-8513-cd403e1c72a5",
+          "imageUUID": "00000000-0000-4000-8000-000000000001",
           "inappropriateReviewStatus": "PASSED_BY_ALGORITHM",
           "timezone": "UTC",
           "eventDate": "2025-06-15T10:00:00+00:00",
           "associatedEntityType": "SINGLE_GAS",
           "associatedEntityName": null,
-          "entityReferenceId": "23285230",
+          "entityReferenceId": "10000001",
           "owner": {
             "__typename": "PlayerProfile",
             "profileName": "test-display-name",
-            "playerProfileId": 106627261
+            "playerProfileId": 999000111
           },
           "versionedUrls": [
             {
               "__typename": "ExpiringURL",
-              "key": "3730581e-smth.jpeg",
-              "url": "https://example.invalid/3730581e-smth.jpeg?sig=test",
+              "key": "fixture-aaa-smth.jpeg",
+              "url": "https://example.invalid/fixture-aaa-smth.jpeg?sig=test",
               "urlExpiration": "2026-05-04T01:54:47Z",
               "version": "SMALL_THUMBNAIL"
             },
             {
               "__typename": "ExpiringURL",
-              "key": "3730581e-mdfd.jpeg",
-              "url": "https://example.invalid/3730581e-mdfd.jpeg?sig=test",
+              "key": "fixture-aaa-mdfd.jpeg",
+              "url": "https://example.invalid/fixture-aaa-mdfd.jpeg?sig=test",
               "urlExpiration": "2026-05-04T01:54:47Z",
               "version": "MEDIUM_FEED"
             },
             {
               "__typename": "ExpiringURL",
-              "key": "3730581e-larg.jpeg",
-              "url": "https://example.invalid/3730581e-larg.jpeg?sig=test",
+              "key": "fixture-aaa-larg.jpeg",
+              "url": "https://example.invalid/fixture-aaa-larg.jpeg?sig=test",
               "urlExpiration": "2026-05-04T01:54:47Z",
               "version": "LARGE"
             }
@@ -1323,12 +1323,12 @@ async def test_graphql_posts_operation_and_variables(
     result = await client.graphql(
         operation_name="DiveImagesByDateRange",
         query="query DiveImagesByDateRange($playerId: Long!, $start: LocalDate!, $end: LocalDate!) { ... }",
-        variables={"playerId": 106627261, "start": "2026-01-01", "end": "2026-12-31"},
+        variables={"playerId": 999000111, "start": "2026-01-01", "end": "2026-12-31"},
     )
     assert captured["body"]["operationName"] == "DiveImagesByDateRange"
-    assert captured["body"]["variables"]["playerId"] == 106627261
+    assert captured["body"]["variables"]["playerId"] == 999000111
     assert "extensions" in captured["body"]
-    assert result["data"]["diveImages"]["items"][0]["imageUUID"] == "3730581e-c80e-4c19-8513-cd403e1c72a5"
+    assert result["data"]["diveImages"]["items"][0]["imageUUID"] == "00000000-0000-4000-8000-000000000001"
 
 
 async def test_get_dive_photos_by_year(
@@ -1340,8 +1340,8 @@ async def test_get_dive_photos_by_year(
         "POST",
         aresponses.Response(status=200, text=json.dumps(load_fixture("dive_images_graphql"))),
     )
-    result = await client.get_dive_photos(profile_id=106627261, year=2025)
-    assert result["data"]["diveImages"]["items"][0]["entityReferenceId"] == "23285230"
+    result = await client.get_dive_photos(profile_id=999000111, year=2025)
+    assert result["data"]["diveImages"]["items"][0]["entityReferenceId"] == "10000001"
 ```
 
 - [ ] **Step 2: Run tests to confirm failures**
@@ -1478,7 +1478,7 @@ async def test_get_social_profile(
 
         api = GarminDiveClient(session=session, get_token=get_token)
         profile = await api.get_social_profile(connect_bearer="connect-bearer")
-    assert profile["profileId"] == 106627261
+    assert profile["profileId"] == 999000111
     assert profile["userName"] == "test@example.invalid"
 
 
@@ -1676,7 +1676,7 @@ async def test_login_calls_ha_garmin_then_exchanges_dive_audience():
     api = MagicMock()
     api.exchange_dive_audience = AsyncMock(return_value=_token_response())
     api.get_social_profile = AsyncMock(
-        return_value={"profileId": 106627261, "displayName": "Rob"}
+        return_value={"profileId": 999000111, "displayName": "test-user"}
     )
 
     auth = GarminDiveAuth(ha_auth=fake_ha, api=api)
@@ -1688,9 +1688,9 @@ async def test_login_calls_ha_garmin_then_exchanges_dive_audience():
 
     fake_ha.login.assert_called_once_with("test@example.invalid", "secret")
     api.exchange_dive_audience.assert_awaited_once_with(connect_bearer="connect-access")
-    assert profile["profileId"] == 106627261
-    assert auth.profile_id == 106627261
-    assert auth.profile_display_name == "Rob"
+    assert profile["profileId"] == 999000111
+    assert auth.profile_id == 999000111
+    assert auth.profile_display_name == "test-user"
     assert (await auth.get_dive_token()) == "dive-access"
 
 
@@ -1755,17 +1755,17 @@ async def test_serialize_round_trip():
     auth._dive_access_token = "a"
     auth._dive_refresh_token = "r"
     auth._dive_expires_at = 1234567890
-    auth._profile_id = 106627261
-    auth._profile_display_name = "Rob"
-    auth._session_path = "/tmp/garmin_dive/106627261.json"
+    auth._profile_id = 999000111
+    auth._profile_display_name = "test-user"
+    auth._session_path = "/tmp/garmin_dive/999000111.json"
 
     data = auth.serialize()
     assert data["dive_access_token"] == "a"
     assert data["dive_refresh_token"] == "r"
     assert data["dive_expires_at"] == 1234567890
-    assert data["profile_id"] == 106627261
-    assert data["profile_display_name"] == "Rob"
-    assert data["session_path"] == "/tmp/garmin_dive/106627261.json"
+    assert data["profile_id"] == 999000111
+    assert data["profile_display_name"] == "test-user"
+    assert data["session_path"] == "/tmp/garmin_dive/999000111.json"
 
 
 # Helper: run a sync function as if it were submitted to a thread pool, for tests.
@@ -2167,11 +2167,11 @@ def test_version_to_size_mapping():
 async def test_resolve_path_uses_account_short_and_uuid(tmp_path: Path):
     cache = PhotoCache(www_dir=tmp_path, account_short="abcd1234")
     p = cache.resolve_path(
-        image_uuid="3730581e-c80e-4c19-8513-cd403e1c72a5",
+        image_uuid="00000000-0000-4000-8000-000000000001",
         size="medium",
         ext="jpeg",
     )
-    assert p == tmp_path / "garmin_dive" / "abcd1234" / "3730581e-c80e-4c19-8513-cd403e1c72a5_medium.jpeg"
+    assert p == tmp_path / "garmin_dive" / "abcd1234" / "00000000-0000-4000-8000-000000000001_medium.jpeg"
 
 
 async def test_local_url_for_size(tmp_path: Path):
@@ -2190,13 +2190,13 @@ async def test_download_records_writes_files_idempotently(
         aresponses.Response(status=200, body=b"\xff\xd8\xff" + b"x" * 100),
     )
     record = PhotoRecord(
-        image_uuid="3730581e",
+        image_uuid="fixture-aaa",
         urls={"medium": ("https://example.invalid/img1.jpeg", "jpeg")},
     )
     async with aiohttp.ClientSession() as session:
         cache = PhotoCache(www_dir=tmp_path, account_short="abcd1234")
         await cache.download_records([record], session=session)
-    f = tmp_path / "garmin_dive" / "abcd1234" / "3730581e_medium.jpeg"
+    f = tmp_path / "garmin_dive" / "abcd1234" / "fixture-aaa_medium.jpeg"
     assert f.exists()
     assert f.read_bytes().startswith(b"\xff\xd8\xff")
 
@@ -2646,10 +2646,10 @@ async def test_build_data_with_photos_collects_gear_images(fake_api, tmp_path, l
         previous_gear_last_modified={},
         photo_cache=cache,
         http_session=MagicMock(),
-        profile_id=106627261,
+        profile_id=999000111,
         year=2026,
     )
-    assert "315aa699-ea9b-4323-8177-3d8a77b28e24" in downloaded
+    assert "00000000-0000-4000-8000-000000000003" in downloaded
     assert any(g.photo_local_url for g in data.gear if g.gear_id == 247811)
 ```
 
@@ -2835,14 +2835,14 @@ async def test_coordinator_fires_new_dive_event(hass, fake_api, load_fixture):
     from custom_components.garmin_dive.const import EVENT_NEW_DIVE
 
     auth = MagicMock()
-    auth.profile_id = 106627261
+    auth.profile_id = 999000111
 
     coordinator = GarminDiveCoordinator(
         hass, api=fake_api, auth=auth, photo_cache=None,
         http_session=MagicMock(), scan_interval_minutes=120,
     )
-    # Seed with a previous snapshot saying we knew of dives 23285230 and 23261609.
-    coordinator._known_dive_ids = {23285230, 23261609}
+    # Seed with a previous snapshot saying we knew of dives 10000001 and 10000003.
+    coordinator._known_dive_ids = {10000001, 10000003}
 
     fired: list = []
     hass.bus.async_listen(EVENT_NEW_DIVE, lambda evt: fired.append(evt.data))
@@ -2851,8 +2851,8 @@ async def test_coordinator_fires_new_dive_event(hass, fake_api, load_fixture):
     await hass.async_block_till_done()
 
     new_ids = [d["dive"]["id"] for d in fired]
-    assert 23285231 in new_ids  # the new dive id appearing this cycle
-    assert 23285230 not in new_ids
+    assert 10000002 in new_ids  # the new dive id appearing this cycle
+    assert 10000001 not in new_ids
 ```
 
 - [ ] **Step 2: Run to confirm failure**
@@ -3093,8 +3093,8 @@ from custom_components.garmin_dive.gear import GearSnapshot
 def make_fake_coordinator(
     *,
     hass,
-    profile_id: int = 106627261,
-    profile_display_name: str = "Rob",
+    profile_id: int = 999000111,
+    profile_display_name: str = "test-user",
     data: CoordinatorData | None = None,
 ) -> Any:
     coord = MagicMock()
@@ -3157,7 +3157,7 @@ async def test_last_dive_state_and_attributes(hass, load_fixture):
     attrs = sensor.extra_state_attributes
     assert attrs["max_depth"] == pytest.approx(26.373)
     assert attrs["bottom_time_minutes"] == pytest.approx(2747.59 / 60)
-    assert attrs["connect_url"] == "https://connect.garmin.com/modern/activity/20180546488"
+    assert attrs["connect_url"] == "https://connect.garmin.com/modern/activity/99000001"
 
 
 async def test_total_and_current_year_dives(hass, load_fixture):
@@ -3430,7 +3430,7 @@ async def test_dive_log_year_attribute_shape(hass, load_fixture):
             "average_depth", "bottom_time", "total_time", "surface_interval",
             "tags", "gases", "location", "photos", "connect_url",
             "dive_computer"} <= set(first.keys())
-    assert first["connect_url"] == "https://connect.garmin.com/modern/activity/20180546488"
+    assert first["connect_url"] == "https://connect.garmin.com/modern/activity/99000001"
     # average_depth is unknown today (spec §13) -> None.
     assert first["average_depth"] is None
 
@@ -3923,8 +3923,8 @@ async def test_dive_computer_sub_devices(hass, load_fixture):
     # Three dive_devices entries -> two with serial numbers (anonymous T1
     # without serial is excluded as it's a duplicate/cached entry).
     serials = {e._serial for e in entities if hasattr(e, '_serial') and e._serial}
-    assert "3403334227" in serials
-    assert "3399109144" in serials
+    assert "1000000001" in serials
+    assert "1000000002" in serials
 ```
 
 - [ ] **Step 2: Run to confirm failure**
@@ -4102,7 +4102,7 @@ async def test_new_dive_available_latches_until_acknowledged(hass, load_fixture)
     coord._latest_dive_acknowledged_id = None
     sensor = NewDiveAvailableBinarySensor(coord)
     assert sensor.is_on is True
-    coord._latest_dive_acknowledged_id = 23285230  # latest dive id
+    coord._latest_dive_acknowledged_id = 10000001  # latest dive id
     assert sensor.is_on is False
 ```
 
@@ -4473,7 +4473,7 @@ async def test_user_step_happy_path(hass, social_profile_payload):
     ) as mock_cls:
         instance = mock_cls.return_value
         instance.login = AsyncMock(return_value=social_profile_payload)
-        instance.serialize = MagicMock(return_value={"profile_id": 106627261})
+        instance.serialize = MagicMock(return_value={"profile_id": 999000111})
         instance.save_ha_garmin_session = AsyncMock()
 
         result = await hass.config_entries.flow.async_init(
@@ -4488,7 +4488,7 @@ async def test_user_step_happy_path(hass, social_profile_payload):
         )
         assert result["type"] == FlowResultType.CREATE_ENTRY
         assert result["title"].startswith("Garmin Dive")
-        assert result["data"]["profile_id"] == 106627261
+        assert result["data"]["profile_id"] == 999000111
 
 
 async def test_user_step_invalid_credentials(hass):
@@ -4515,7 +4515,7 @@ async def test_unique_id_is_profile_id(hass, social_profile_payload):
     ) as mock_cls:
         instance = mock_cls.return_value
         instance.login = AsyncMock(return_value=social_profile_payload)
-        instance.serialize = MagicMock(return_value={"profile_id": 106627261})
+        instance.serialize = MagicMock(return_value={"profile_id": 999000111})
         instance.save_ha_garmin_session = AsyncMock()
 
         result = await hass.config_entries.flow.async_init(
@@ -4526,7 +4526,7 @@ async def test_unique_id_is_profile_id(hass, social_profile_payload):
             {"email": "test@example.invalid", "password": "secret"},
         )
         entry = result["result"]
-        assert entry.unique_id == "106627261"
+        assert entry.unique_id == "999000111"
 ```
 
 - [ ] **Step 2: Run to confirm failure**
@@ -4777,8 +4777,8 @@ from custom_components.garmin_dive.const import DOMAIN
 def patched_auth(load_fixture):
     with patch("custom_components.garmin_dive.GarminDiveAuth") as cls:
         instance = cls.return_value
-        instance.profile_id = 106627261
-        instance.profile_display_name = "Rob"
+        instance.profile_id = 999000111
+        instance.profile_display_name = "test-user"
         instance.get_dive_token = AsyncMock(return_value="dive-token")
         yield instance
 
@@ -4799,8 +4799,8 @@ async def test_setup_entry_creates_runtime_data_and_loads_platforms(
     cls, instance = patched_coordinator
     entry = MockConfigEntry(
         domain=DOMAIN,
-        data={"profile_id": 106627261, "dive_access_token": "tok"},
-        unique_id="106627261",
+        data={"profile_id": 999000111, "dive_access_token": "tok"},
+        unique_id="999000111",
     )
     entry.add_to_hass(hass)
 
@@ -4813,8 +4813,8 @@ async def test_setup_entry_creates_runtime_data_and_loads_platforms(
 async def test_unload_entry_unloads_platforms(hass, patched_auth, patched_coordinator):
     entry = MockConfigEntry(
         domain=DOMAIN,
-        data={"profile_id": 106627261, "dive_access_token": "tok"},
-        unique_id="106627261",
+        data={"profile_id": 999000111, "dive_access_token": "tok"},
+        unique_id="999000111",
     )
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)

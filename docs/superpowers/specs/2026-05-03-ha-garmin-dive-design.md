@@ -26,7 +26,7 @@
 
 ## 2. User context
 
-- Two HA users / two Garmin accounts: **Rob** (Descent Mk2i + Descent T1 transmitter) and **Ana** (Descent Mk2s).
+- Two HA users / two Garmin accounts: **User A** (Descent Mk2i + Descent T1 transmitter) and **User B** (Descent Mk2s).
 - ~20 dives/year, almost always concentrated in 1–2 trips.
 - Dashboard intent: a yearly timeline of dive cards with photos, plus a gear-status panel.
 
@@ -166,11 +166,11 @@ Total: 4 unconditional calls + ≤ K conditional calls (K ≈ 0 in steady state,
 Each Garmin account is a top-level HA Device. Dive computers (from `/dive/devices`) and gear items (from `/gear/summary`) are sub-devices linked via `via_device`.
 
 ```
-Garmin Dive — Rob
-├── Descent Mk2i              (DIVE_COMPUTER, serial 3403334227, image from Garmin CDN)
-├── Descent T1                (TRANSMITTER, serial 3399109144, ANT channel 356952664)
+Garmin Dive — User A
+├── Descent Mk2i              (DIVE_COMPUTER, serial 1000000001, image from Garmin CDN)
+├── Descent T1                (TRANSMITTER, serial 1000000002, ANT channel 10100200)
 ├── Apeks Double Gauge SPG    (REGULATOR, serviced 2025-01-01, due 2027-01-01)
-├── Atomic B2 Regulator       (REGULATOR, DIN, piston, serial 1CA0062)
+├── Atomic B2 Regulator       (REGULATOR, DIN, piston, serial TEST-REG-1)
 ├── LetonPower Sealion L24    (LIGHT, photography, HID, 12000 lumen)
 ├── Miflex Hose Extension     (OTHER, 15cm)
 ├── Underwater iPhone Housing (CAMERA)

@@ -4,7 +4,7 @@
   "type": "REGULATOR",
   "brand": "Atomic Aquatics",
   "model": "B2",
-  "serialNumber": "1CA0062",
+  "serialNumber": "TEST-REG-1",
   "dueIndicator": "NOT_DUE",
   "lastServiceDate": "2025-01-01",
   "serviceIntervalDays": 730,

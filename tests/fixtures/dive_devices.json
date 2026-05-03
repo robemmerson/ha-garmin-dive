@@ -3,8 +3,8 @@
     "imageUrl": "https://example.invalid/mk2i.png",
     "productDisplayName": "Descent MK2i",
     "partNumber": "006-B3258-00",
-    "deviceVersionPk": 904332,
-    "serialNumber": 3403334227,
+    "deviceVersionPk": 10100100,
+    "serialNumber": 1000000001,
     "type": "DIVE_COMPUTER",
     "gearTrackingStatus": "TRACKED",
     "deviceDismissed": false
@@ -12,7 +12,7 @@
   {
     "imageUrl": "https://example.invalid/t1.png",
     "productDisplayName": "Descent T1",
-    "antChannelId": 356952664,
+    "antChannelId": 10100200,
     "type": "TRANSMITTER",
     "gearTrackingStatus": "TRACKED",
     "deviceDismissed": false
@@ -20,8 +20,8 @@
   {
     "imageUrl": "https://example.invalid/t1.png",
     "productDisplayName": "Descent T1",
-    "serialNumber": 3399109144,
-    "antChannelId": 356952664,
+    "serialNumber": 1000000002,
+    "antChannelId": 10100200,
     "type": "TRANSMITTER",
     "gearTrackingStatus": "TRACKED",
     "deviceDismissed": false

@@ -15,9 +15,9 @@ async def test_diagnostics_redacts_tokens_and_session_path(hass):
     entry.data = {
         "dive_access_token": "secret-access",
         "dive_refresh_token": "secret-refresh",
-        "session_path": "/tmp/garmin_dive/106627261.json",
-        "profile_id": 106627261,
-        "profile_display_name": "Rob",
+        "session_path": "/tmp/garmin_dive/999000111.json",
+        "profile_id": 999000111,
+        "profile_display_name": "test-user",
     }
     entry.runtime_data = None
 
@@ -25,7 +25,7 @@ async def test_diagnostics_redacts_tokens_and_session_path(hass):
     redacted = result["entry_data"]
     assert redacted["dive_access_token"] != "secret-access"
     assert redacted["dive_refresh_token"] != "secret-refresh"
-    assert redacted["session_path"] != "/tmp/garmin_dive/106627261.json"
+    assert redacted["session_path"] != "/tmp/garmin_dive/999000111.json"
 
 
 def test_redact_set_covers_known_secrets():

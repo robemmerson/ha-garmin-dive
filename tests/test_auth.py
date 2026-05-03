@@ -42,7 +42,9 @@ async def test_login_calls_ha_garmin_then_exchanges_dive_audience():
 
     api = MagicMock()
     api.exchange_dive_audience = AsyncMock(return_value=_token_response())
-    api.get_social_profile = AsyncMock(return_value={"profileId": 106627261, "displayName": "Rob"})
+    api.get_social_profile = AsyncMock(
+        return_value={"profileId": 999000111, "displayName": "test-user"}
+    )
 
     auth = GarminDiveAuth(ha_auth=fake_ha, api=api)
     profile = await auth.login(
@@ -53,9 +55,9 @@ async def test_login_calls_ha_garmin_then_exchanges_dive_audience():
 
     fake_ha.login.assert_called_once_with("test@example.invalid", "secret")
     api.exchange_dive_audience.assert_awaited_once_with(connect_bearer="connect-access")
-    assert profile["profileId"] == 106627261
-    assert auth.profile_id == 106627261
-    assert auth.profile_display_name == "Rob"
+    assert profile["profileId"] == 999000111
+    assert auth.profile_id == 999000111
+    assert auth.profile_display_name == "test-user"
     assert (await auth.get_dive_token()) == "dive-access"
 
 
@@ -118,17 +120,17 @@ async def test_serialize_round_trip():
     auth._dive_access_token = "a"
     auth._dive_refresh_token = "r"
     auth._dive_expires_at = 1234567890
-    auth._profile_id = 106627261
-    auth._profile_display_name = "Rob"
-    auth._session_path = "/tmp/garmin_dive/106627261.json"
+    auth._profile_id = 999000111
+    auth._profile_display_name = "test-user"
+    auth._session_path = "/tmp/garmin_dive/999000111.json"
 
     data = auth.serialize()
     assert data["dive_access_token"] == "a"
     assert data["dive_refresh_token"] == "r"
     assert data["dive_expires_at"] == 1234567890
-    assert data["profile_id"] == 106627261
-    assert data["profile_display_name"] == "Rob"
-    assert data["session_path"] == "/tmp/garmin_dive/106627261.json"
+    assert data["profile_id"] == 999000111
+    assert data["profile_display_name"] == "test-user"
+    assert data["session_path"] == "/tmp/garmin_dive/999000111.json"
 
 
 async def test_refresh_raises_runtime_error_when_no_refresh_token():

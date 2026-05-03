@@ -16,8 +16,8 @@ from custom_components.garmin_dive.const import DOMAIN
 def patched_auth():
     with patch("custom_components.garmin_dive.GarminDiveAuth") as cls:
         instance = cls.return_value
-        instance.profile_id = 106627261
-        instance.profile_display_name = "Rob"
+        instance.profile_id = 999000111
+        instance.profile_display_name = "test-user"
         instance.session_path = None
         instance.get_dive_token = AsyncMock(return_value="dive-token")
         instance.load_ha_garmin_session = AsyncMock(return_value=True)
@@ -41,8 +41,8 @@ async def test_setup_entry_creates_runtime_data_and_loads_platforms(
     _cls, instance = patched_coordinator
     entry = MockConfigEntry(
         domain=DOMAIN,
-        data={"profile_id": 106627261, "dive_access_token": "tok"},
-        unique_id="106627261",
+        data={"profile_id": 999000111, "dive_access_token": "tok"},
+        unique_id="999000111",
     )
     entry.add_to_hass(hass)
 
@@ -55,8 +55,8 @@ async def test_setup_entry_creates_runtime_data_and_loads_platforms(
 async def test_unload_entry_unloads_platforms(hass, patched_auth, patched_coordinator):
     entry = MockConfigEntry(
         domain=DOMAIN,
-        data={"profile_id": 106627261, "dive_access_token": "tok"},
-        unique_id="106627261",
+        data={"profile_id": 999000111, "dive_access_token": "tok"},
+        unique_id="999000111",
     )
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)

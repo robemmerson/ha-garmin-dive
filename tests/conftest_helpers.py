@@ -17,8 +17,8 @@ from custom_components.garmin_dive.gear import GearSnapshot
 def make_fake_coordinator(
     *,
     hass,
-    profile_id: int = 106627261,
-    profile_display_name: str = "Rob",
+    profile_id: int = 999000111,
+    profile_display_name: str = "test-user",
     data: CoordinatorData | None = None,
 ) -> Any:
     coord = MagicMock()

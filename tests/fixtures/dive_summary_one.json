@@ -4,8 +4,8 @@
   "pageNumber": 0,
   "diveActivities": [
     {
-      "id": 23285230,
-      "connectActivityId": 20180546488,
+      "id": 10000001,
+      "connectActivityId": 99000001,
       "name": "Test Site Alpha",
       "diveType": "SINGLE_GAS",
       "number": 68,

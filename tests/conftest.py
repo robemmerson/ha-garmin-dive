@@ -1,11 +1,13 @@
 """Shared pytest fixtures for ha-garmin-dive."""
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 from typing import Any
 
 import pytest
+from aresponses import ResponsesMockServer
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -29,3 +31,11 @@ pytest_plugins = ["pytest_homeassistant_custom_component"]
 def auto_enable_custom_integrations(enable_custom_integrations):
     """Allow custom_components/garmin_dive to load in HA tests."""
     return
+
+
+@pytest.fixture
+async def aresponses(socket_enabled):
+    """ResponsesMockServer with sockets permitted (overrides HA socket guard)."""
+    loop = asyncio.get_running_loop()
+    async with ResponsesMockServer(loop=loop) as server:
+        yield server

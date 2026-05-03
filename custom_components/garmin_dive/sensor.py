@@ -187,7 +187,16 @@ class DiveLogYearSensor(GarminDiveAccountEntity, SensorEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         if not self.coordinator.data:
             return {"dives": []}
-        dives_payload = [self._dive_to_card(d) for d in self.coordinator.data.dives]
+        # HA caps state attributes at 16 KB; an unfiltered list of 60+ dives
+        # breaches that and the recorder drops the attribute. Window to the
+        # current and previous calendar year, which matches the default
+        # `current_year_plus_one` history-scope option.
+        years = {date.today().year, date.today().year - 1}
+        dives_payload = [
+            self._dive_to_card(d)
+            for d in self.coordinator.data.dives
+            if datetime.fromisoformat(d.start_time).year in years
+        ]
         return {"dives": dives_payload}
 
     def _dive_to_card(self, d: Dive) -> dict[str, Any]:
@@ -287,6 +296,16 @@ class GearServiceStatusSensor(_GearEntityBase, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options: ClassVar[list[str]] = ["not_due", "due", "overdue"]  # type: ignore[misc]
 
+    # Garmin uses richer values (e.g. DUE_SOON, OVERDUE_BY_X_DAYS); collapse to
+    # our three-state enum so HA doesn't reject the entity.
+    _INDICATOR_MAP: ClassVar[dict[str, str]] = {
+        "NOT_DUE": "not_due",
+        "DUE": "due",
+        "DUE_SOON": "due",
+        "OVERDUE": "overdue",
+        "PAST_DUE": "overdue",
+    }
+
     def __init__(self, coordinator: GarminDiveCoordinator, *, gear_id: int) -> None:
         super().__init__(coordinator, gear_id=gear_id)
         self._attr_unique_id = f"{self._account_id}_{gear_id}_service_status"
@@ -294,7 +313,20 @@ class GearServiceStatusSensor(_GearEntityBase, SensorEntity):
     @property
     def native_value(self) -> str | None:
         ind = self._detail().get("dueIndicator")
-        return ind.lower() if ind else None
+        if not ind:
+            return None
+        mapped = self._INDICATOR_MAP.get(ind.upper())
+        if mapped is not None:
+            return mapped
+        # Fall back to a prefix match for OVERDUE_BY_30D etc.
+        upper = ind.upper()
+        if upper.startswith("OVERDUE") or upper.startswith("PAST_DUE"):
+            return "overdue"
+        if upper.startswith("DUE"):
+            return "due"
+        if upper.startswith("NOT"):
+            return "not_due"
+        return None
 
 
 class GearDaysUntilServiceSensor(_GearEntityBase, SensorEntity):

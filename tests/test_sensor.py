@@ -59,6 +59,7 @@ async def test_handles_empty_dive_list(hass):
     assert TotalDivesSensor(coord).native_value == 0
 
 
+@freeze_time("2026-05-03T12:00:00")
 async def test_dive_log_year_attribute_shape(hass, load_fixture):
     data = make_data(summary=load_fixture("dive_summary_full"))
     coord = make_fake_coordinator(hass=hass, data=data)
@@ -145,6 +146,35 @@ async def test_gear_service_status_returns_due_indicator(hass, load_fixture):
     coord = make_fake_coordinator(hass=hass, data=data)
     sensor = GearServiceStatusSensor(coord, gear_id=141548)
     assert sensor.native_value == "not_due"
+
+
+@pytest.mark.parametrize(
+    ("indicator", "expected"),
+    [
+        ("NOT_DUE", "not_due"),
+        ("DUE", "due"),
+        ("DUE_SOON", "due"),
+        ("OVERDUE", "overdue"),
+        ("PAST_DUE", "overdue"),
+        ("OVERDUE_BY_30D", "overdue"),
+        ("UNKNOWN_STATE", None),
+        (None, None),
+    ],
+)
+async def test_gear_service_status_maps_unknown_indicators(hass, load_fixture, indicator, expected):
+    detail = dict(load_fixture("gear_detail_regulator"))
+    if indicator is None:
+        detail.pop("dueIndicator", None)
+    else:
+        detail["dueIndicator"] = indicator
+    data = make_data(
+        summary=load_fixture("dive_summary_full"),
+        gear_summary=load_fixture("gear_summary"),
+        gear_details={141548: detail},
+    )
+    coord = make_fake_coordinator(hass=hass, data=data)
+    sensor = GearServiceStatusSensor(coord, gear_id=141548)
+    assert sensor.native_value == expected
 
 
 @freeze_time("2026-05-03")

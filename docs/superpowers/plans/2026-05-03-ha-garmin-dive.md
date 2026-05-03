@@ -552,12 +552,12 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     {
       "id": 23285230,
       "connectActivityId": 20180546488,
-      "name": "Elphinstone (South side)",
+      "name": "Test Site Alpha",
       "diveType": "SINGLE_GAS",
       "number": 68,
       "excludedFromDLN": false,
-      "startTime": "2025-08-26T09:01:37+03:00",
-      "timezone": "Africa/Cairo",
+      "startTime": "2025-06-15T10:00:00+00:00",
+      "timezone": "UTC",
       "totalTime": 2807.98,
       "maxDepth": 26.373,
       "bottomTime": 2747.59,
@@ -593,12 +593,12 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     {
       "id": 23285230,
       "connectActivityId": 20180546488,
-      "name": "Elphinstone (South side)",
+      "name": "Test Site Alpha",
       "diveType": "SINGLE_GAS",
       "number": 68,
       "excludedFromDLN": false,
-      "startTime": "2025-08-26T09:01:37+03:00",
-      "timezone": "Africa/Cairo",
+      "startTime": "2025-06-15T10:00:00+00:00",
+      "timezone": "UTC",
       "totalTime": 2807.98,
       "maxDepth": 26.373,
       "bottomTime": 2747.59,
@@ -619,13 +619,13 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     {
       "id": 23285231,
       "connectActivityId": 20180546492,
-      "name": "Elphinstone (North side)",
+      "name": "Test Site Beta",
       "diveType": "SINGLE_GAS",
-      "entryLoc": { "latitude": 25.31160389073193, "longitude": 34.85996866598725 },
+      "entryLoc": { "latitude": 0.0, "longitude": 0.0 },
       "number": 67,
       "excludedFromDLN": false,
-      "startTime": "2025-08-26T07:33:14+03:00",
-      "timezone": "Africa/Cairo",
+      "startTime": "2025-06-15T08:30:00+00:00",
+      "timezone": "UTC",
       "totalTime": 2619.22,
       "maxDepth": 33.492,
       "bottomTime": 2558.17,
@@ -646,13 +646,13 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     {
       "id": 23261609,
       "connectActivityId": 20170276106,
-      "name": "Dolphin House Dive 2",
+      "name": "Test Site Gamma",
       "diveType": "SINGLE_GAS",
-      "entryLoc": { "latitude": 24.985758243128657, "longitude": 34.99630426056683 },
+      "entryLoc": { "latitude": 0.0, "longitude": 0.0 },
       "number": 66,
       "excludedFromDLN": false,
-      "startTime": "2025-08-25T11:47:45+03:00",
-      "timezone": "Africa/Cairo",
+      "startTime": "2025-06-14T11:30:00+00:00",
+      "timezone": "UTC",
       "totalTime": 3005.39,
       "maxDepth": 15.363,
       "bottomTime": 2944.37,
@@ -745,18 +745,18 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     "gearId": 463947,
     "name": "Deep Diver",
     "type": "CERTIFICATION",
-    "dateOfFirstUse": "2025-08-21",
+    "dateOfFirstUse": "2025-01-01",
     "status": "ACTIVE",
-    "creationTs": "2025-08-22T10:45:48Z",
+    "creationTs": "2025-01-01T00:00:00Z",
     "stats": { "numAssociatedDives": 3, "totalAssociatedDiveTime": 8794.561 }
   },
   {
     "gearId": 247811,
     "name": "Underwater iPhone Light",
     "type": "LIGHT",
-    "dateOfFirstUse": "2024-04-06",
+    "dateOfFirstUse": "2024-01-01",
     "status": "ACTIVE",
-    "creationTs": "2024-04-07T07:51:58Z",
+    "creationTs": "2024-01-01T00:00:00Z",
     "image": {
       "imageUUID": "315aa699-ea9b-4323-8177-3d8a77b28e24",
       "inappropriateStatus": "PASSED_BY_ALGORITHM",
@@ -787,10 +787,10 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     "gearId": 141548,
     "name": "Atomic B2 Regulator",
     "type": "REGULATOR",
-    "dateOfFirstUse": "2023-04-05",
+    "dateOfFirstUse": "2023-01-01",
     "status": "ACTIVE",
-    "creationTs": "2023-01-08T20:57:36Z",
-    "lastModifiedTs": "2025-04-06T10:43:38Z",
+    "creationTs": "2023-01-01T00:00:00Z",
+    "lastModifiedTs": "2025-01-02T00:00:00Z",
     "stats": { "numAssociatedDives": 31, "totalAssociatedDiveTime": 95690.84 }
   }
 ]
@@ -807,21 +807,21 @@ def auto_enable_custom_integrations(enable_custom_integrations):
   "model": "B2",
   "serialNumber": "1CA0062",
   "dueIndicator": "NOT_DUE",
-  "lastServiceDate": "2025-04-04",
+  "lastServiceDate": "2025-01-01",
   "serviceIntervalDays": 730,
-  "lastServicedBy": "Mike's Dive Store",
-  "nextServiceDate": "2027-04-04",
+  "lastServicedBy": "Test Dive Shop",
+  "nextServiceDate": "2027-01-01",
   "nextServiceDueIndicator": "NOT_DUE",
-  "dateOfFirstUse": "2023-04-05",
+  "dateOfFirstUse": "2023-01-01",
   "purchasePrice": 872.4,
   "purchaseCurrency": "GBP",
-  "purchasedFrom": "Mike's Dive Store",
-  "purchaseDate": "2022-12-28",
+  "purchasedFrom": "Test Dive Shop",
+  "purchaseDate": "2022-12-01",
   "surfaceWeight": 1.1,
   "surfaceWeightUnit": "KILOGRAM",
   "status": "ACTIVE",
-  "creationTs": "2023-01-08T20:57:36Z",
-  "lastModifiedTs": "2025-04-06T10:43:38Z",
+  "creationTs": "2023-01-01T00:00:00Z",
+  "lastModifiedTs": "2025-01-02T00:00:00Z",
   "stats": { "numAssociatedDives": 31, "totalAssociatedDiveTime": 95690.84 },
   "gearField": {
     "fields": { "type": "PISTON", "connectorType": "DIN" },
@@ -840,14 +840,14 @@ def auto_enable_custom_integrations(enable_custom_integrations):
   "type": "LIGHT",
   "brand": "LetonPower",
   "model": "Sealion L24",
-  "dateOfFirstUse": "2024-04-06",
+  "dateOfFirstUse": "2024-01-01",
   "purchasePrice": 158.0,
   "purchaseCurrency": "GBP",
   "purchasedFrom": "Amazon",
-  "purchaseDate": "2024-03-23",
+  "purchaseDate": "2024-01-01",
   "status": "ACTIVE",
-  "creationTs": "2024-04-07T07:51:58Z",
-  "lastModifiedTs": "2024-04-07T07:52:16Z",
+  "creationTs": "2024-01-01T00:00:00Z",
+  "lastModifiedTs": "2024-01-02T00:00:00Z",
   "stats": { "numAssociatedDives": 17, "totalAssociatedDiveTime": 51103.05 },
   "gearField": {
     "fields": { "type": "PHOTOGRAPHY", "bulb": "HID", "rechargeable": true, "lumenOutput": 12000 },
@@ -869,12 +869,12 @@ def auto_enable_custom_integrations(enable_custom_integrations):
   "model": "Descent T1",
   "serialNumber": "09144",
   "antChannelId": 356952664,
-  "dateOfFirstUse": "2022-08-20",
-  "purchasedFrom": "Mike's Dive Store",
-  "purchaseDate": "2022-07-29",
+  "dateOfFirstUse": "2022-01-01",
+  "purchasedFrom": "Test Dive Shop",
+  "purchaseDate": "2022-01-01",
   "status": "ACTIVE",
-  "creationTs": "2023-04-06T01:20:01Z",
-  "lastModifiedTs": "2023-04-19T03:24:14Z",
+  "creationTs": "2022-01-01T00:00:00Z",
+  "lastModifiedTs": "2023-01-01T00:00:00Z",
   "stats": { "numAssociatedDives": 36, "totalAssociatedDiveTime": 108558.86 },
   "media": { "images": [] }
 }
@@ -891,19 +891,19 @@ def auto_enable_custom_integrations(enable_custom_integrations):
   "model": "Carbon HD Hose",
   "size": "15cm/6in",
   "dueIndicator": "NOT_DUE",
-  "lastServiceDate": "2025-04-04",
+  "lastServiceDate": "2025-01-01",
   "serviceIntervalDays": 730,
-  "lastServicedBy": "Mike's Dive Store",
-  "nextServiceDate": "2027-04-04",
+  "lastServicedBy": "Test Dive Shop",
+  "nextServiceDate": "2027-01-01",
   "nextServiceDueIndicator": "NOT_DUE",
-  "dateOfFirstUse": "2022-08-02",
+  "dateOfFirstUse": "2022-01-01",
   "purchasePrice": 28.8,
   "purchaseCurrency": "GBP",
-  "purchasedFrom": "Aquanauts Scuba Kingston",
-  "purchaseDate": "2022-08-02",
+  "purchasedFrom": "Test Dive Shop",
+  "purchaseDate": "2022-01-01",
   "status": "ACTIVE",
-  "creationTs": "2022-08-03T11:41:32Z",
-  "lastModifiedTs": "2025-04-06T10:44:07Z",
+  "creationTs": "2022-01-01T00:00:00Z",
+  "lastModifiedTs": "2025-01-02T00:00:00Z",
   "stats": { "numAssociatedDives": 31, "totalAssociatedDiveTime": 95690.84 },
   "media": { "images": [] }
 }
@@ -942,8 +942,8 @@ def auto_enable_custom_integrations(enable_custom_integrations):
           "__typename": "Image",
           "imageUUID": "3730581e-c80e-4c19-8513-cd403e1c72a5",
           "inappropriateReviewStatus": "PASSED_BY_ALGORITHM",
-          "timezone": "Africa/Cairo",
-          "eventDate": "2025-08-26T09:01:37+03:00",
+          "timezone": "UTC",
+          "eventDate": "2025-06-15T10:00:00+00:00",
           "associatedEntityType": "SINGLE_GAS",
           "associatedEntityName": null,
           "entityReferenceId": "23285230",
@@ -1044,7 +1044,7 @@ async def test_get_dive_summary_returns_decoded_json(
     )
     result = await client.get_dive_summary(page=0, results_per_page=1)
     assert result["totalCount"] == 68
-    assert result["diveActivities"][0]["name"] == "Elphinstone (South side)"
+    assert result["diveActivities"][0]["name"] == "Test Site Alpha"
 
 
 async def test_get_dive_summary_sends_bearer_and_app_headers(
@@ -1224,7 +1224,7 @@ async def test_get_gear_detail(
     )
     detail = await client.get_gear_detail(gear_id=141548, current_user_date="2026-05-03")
     assert detail["brand"] == "Atomic Aquatics"
-    assert detail["nextServiceDate"] == "2027-04-04"
+    assert detail["nextServiceDate"] == "2027-01-01"
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -2851,7 +2851,7 @@ async def test_coordinator_fires_new_dive_event(hass, fake_api, load_fixture):
     await hass.async_block_till_done()
 
     new_ids = [d["dive"]["id"] for d in fired]
-    assert 23285231 in new_ids  # the second Elphinstone
+    assert 23285231 in new_ids  # the new dive id appearing this cycle
     assert 23285230 not in new_ids
 ```
 
@@ -3153,7 +3153,7 @@ async def test_last_dive_state_and_attributes(hass, load_fixture):
     coord = make_fake_coordinator(hass=hass, data=data)
     sensor = LastDiveSensor(coord)
 
-    assert sensor.native_value == "Elphinstone (South side)"
+    assert sensor.native_value == "Test Site Alpha"
     attrs = sensor.extra_state_attributes
     assert attrs["max_depth"] == pytest.approx(26.373)
     assert attrs["bottom_time_minutes"] == pytest.approx(2747.59 / 60)
@@ -3672,8 +3672,8 @@ async def test_gear_days_until_service(hass, load_fixture):
     )
     coord = make_fake_coordinator(hass=hass, data=data)
     sensor = GearDaysUntilServiceSensor(coord, gear_id=141548)
-    # nextServiceDate=2027-04-04, today=2026-05-03 -> 336 days
-    assert sensor.native_value == 336
+    # nextServiceDate=2027-01-01, today=2026-05-03 -> 243 days
+    assert sensor.native_value == 243
 ```
 
 - [ ] **Step 2: Run to confirm failure**
@@ -4232,14 +4232,14 @@ async def test_calendar_event_for_each_dive(hass, load_fixture):
     coord = make_fake_coordinator(hass=hass, data=data)
     cal = GarminDiveCalendarEntity(coord)
 
-    start = datetime(2025, 8, 25, 0, 0, tzinfo=timezone.utc)
-    end = datetime(2025, 8, 27, 0, 0, tzinfo=timezone.utc)
+    start = datetime(2025, 6, 13, 0, 0, tzinfo=timezone.utc)
+    end = datetime(2025, 6, 16, 0, 0, tzinfo=timezone.utc)
     events = await cal.async_get_events(hass, start, end)
 
     assert len(events) == 3
     e = next(ev for ev in events if "South side" in ev.summary)
     assert "Max depth" in e.description
-    assert e.location == "Africa/Cairo"
+    assert e.location == "UTC"
 
 
 async def test_calendar_next_event(hass, load_fixture):

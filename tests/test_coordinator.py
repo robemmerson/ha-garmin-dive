@@ -118,6 +118,6 @@ async def test_coordinator_fires_new_dive_event(hass, fake_api):
     await hass.async_block_till_done()
 
     new_ids = [d["dive"]["id"] for d in fired]
-    assert 23285231 in new_ids  # the second Elphinstone
+    assert 23285231 in new_ids  # the new dive id appearing this cycle
     assert 23285230 not in new_ids
     assert fired[0]["account_id"] == "106627261"

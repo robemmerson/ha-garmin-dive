@@ -169,7 +169,7 @@ Each Garmin account is a top-level HA Device. Dive computers (from `/dive/device
 Garmin Dive — Rob
 ├── Descent Mk2i              (DIVE_COMPUTER, serial 3403334227, image from Garmin CDN)
 ├── Descent T1                (TRANSMITTER, serial 3399109144, ANT channel 356952664)
-├── Apeks Double Gauge SPG    (REGULATOR, serviced 2025-04-04, due 2027-04-04)
+├── Apeks Double Gauge SPG    (REGULATOR, serviced 2025-01-01, due 2027-01-01)
 ├── Atomic B2 Regulator       (REGULATOR, DIN, piston, serial 1CA0062)
 ├── LetonPower Sealion L24    (LIGHT, photography, HID, 12000 lumen)
 ├── Miflex Hose Extension     (OTHER, 15cm)

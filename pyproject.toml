@@ -44,7 +44,7 @@ warn_unused_ignores = true
 files = ["custom_components/garmin_dive"]
 
 [[tool.mypy.overrides]]
-module = ["garth.*"]
+module = ["ha_garmin.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

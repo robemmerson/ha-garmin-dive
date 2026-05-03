@@ -9,4 +9,4 @@ ruff>=0.7
 mypy>=1.10
 codespell>=2.3
 pre-commit>=3.7
-garth>=0.5.0
+ha-garmin>=0.1.19

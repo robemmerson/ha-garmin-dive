@@ -72,7 +72,7 @@ class GarminDiveConfigFlow(ConfigFlow, domain=DOMAIN):
         try:
             profile = await self._login_task
         except Exception as err:  # pragma: no cover - defensive
-            _LOGGER.exception("Garmin login after MFA failed: %s", err)
+            _LOGGER.warning("Garmin login after MFA failed: %s", type(err).__name__)
             return self.async_show_form(
                 step_id="mfa",
                 data_schema=MFA_SCHEMA,
@@ -109,6 +109,11 @@ class GarminDiveConfigFlow(ConfigFlow, domain=DOMAIN):
 
         self._login_task = asyncio.create_task(run_login())
 
+        # Clear instance-level credential references; the closure inside
+        # run_login() retains what it needs.
+        self._password = None
+        self._email = None
+
         # Race: either login completes synchronously (no MFA) or blocks on the
         # mfa_provider future.
         try:
@@ -123,7 +128,9 @@ class GarminDiveConfigFlow(ConfigFlow, domain=DOMAIN):
             # Still pending => login is blocked on mfa_provider
             return self.async_show_form(step_id="mfa", data_schema=MFA_SCHEMA)
         except Exception as err:
-            _LOGGER.exception("Garmin login failed: %s", err)
+            # Log only the exception type, not the message — defensive against
+            # upstream libraries that might include credentials in exc text.
+            _LOGGER.warning("Garmin login failed: %s", type(err).__name__)
             if not self._login_task.done():
                 self._login_task.cancel()
             return self.async_show_form(
@@ -147,10 +154,12 @@ class GarminDiveConfigFlow(ConfigFlow, domain=DOMAIN):
         title = (
             f"Garmin Dive — {profile.get('displayName') or profile.get('fullName') or profile_id}"
         )
-        return self.async_create_entry(title=title, data=self._auth.serialize())
+        result = self.async_create_entry(title=title, data=self._auth.serialize())
+        self._mfa_future = None
+        self._login_task = None
+        return result
 
     async def async_step_reauth(self, entry_data: dict[str, Any]) -> ConfigFlowResult:
-        self._email = entry_data.get("email")
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(

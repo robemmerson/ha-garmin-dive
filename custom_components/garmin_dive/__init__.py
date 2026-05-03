@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import aiohttp
 from ha_garmin import GarminAuth
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -17,7 +18,10 @@ from .const import (
     CONF_SCAN_INTERVAL_MINUTES,
     DEFAULT_PHOTO_CACHE_ENABLED,
     DEFAULT_SCAN_INTERVAL_MINUTES,
+    DIVE_OAUTH_CLIENT_ID,
     DOMAIN,
+    HOST_DIAUTH,
+    PATH_OAUTH_REVOKE,
     PLATFORMS,
 )
 from .coordinator import GarminDiveCoordinator
@@ -111,3 +115,43 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Future-proof migration handler."""
     return True
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Revoke OAuth tokens server-side and clean up persisted state on entry removal."""
+    # 1. Revoke the DIVE refresh token if present
+    refresh_token = entry.data.get("dive_refresh_token")
+    if refresh_token:
+        session = async_get_clientsession(hass)
+        try:
+            async with session.post(
+                f"{HOST_DIAUTH}{PATH_OAUTH_REVOKE}",
+                data={
+                    "token": refresh_token,
+                    "token_type_hint": "refresh_token",
+                    "client_id": DIVE_OAUTH_CLIENT_ID,
+                },
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as resp:
+                if resp.status >= 400:
+                    _LOGGER.warning(
+                        "Token revocation returned HTTP %s;"
+                        " tokens may remain valid until natural expiry",
+                        resp.status,
+                    )
+        except Exception as err:  # pragma: no cover - best-effort
+            _LOGGER.warning("Token revocation failed: %s", type(err).__name__)
+
+    # 2. Remove the persisted ha-garmin session file if present
+    session_path = entry.data.get("session_path")
+    if session_path:
+
+        def _unlink_if_exists() -> None:
+            p = Path(session_path)
+            if p.exists():
+                p.unlink()
+
+        try:
+            await hass.async_add_executor_job(_unlink_if_exists)
+        except Exception as err:  # pragma: no cover - best-effort
+            _LOGGER.warning("Failed to remove session file: %s", type(err).__name__)

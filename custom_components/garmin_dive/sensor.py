@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import date, datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -16,7 +16,8 @@ from homeassistant.const import UnitOfLength, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .entity import GarminDiveAccountEntity
+from .entity import GarminDiveAccountEntity, GarminDiveSubDeviceEntity
+from .gear import days_until_service, is_serviceable
 
 if TYPE_CHECKING:
     from .coordinator import Dive, GarminDiveCoordinator
@@ -262,6 +263,191 @@ class GearCountSensor(GarminDiveAccountEntity, SensorEntity):
         return {"by_type": dict(Counter(g.gear_type for g in self.coordinator.data.gear))}
 
 
+class _GearEntityBase(GarminDiveSubDeviceEntity):
+    """Common locator for gear sub-device sensors."""
+
+    def __init__(self, coordinator: GarminDiveCoordinator, *, gear_id: int) -> None:
+        item = next(g for g in coordinator.data.gear if g.gear_id == gear_id)
+        detail = item.detail_raw or item.summary_raw
+        manufacturer = detail.get("brand")
+        model = detail.get("model")
+        serial = detail.get("serialNumber")
+        super().__init__(
+            coordinator,
+            sub_device_id=str(gear_id),
+            sub_device_name=item.name,
+            manufacturer=manufacturer,
+            model=model,
+            serial_number=str(serial) if serial else None,
+            entity_picture=item.photo_local_url,
+        )
+        self._gear_id = gear_id
+
+    def _detail(self) -> dict[str, Any]:
+        item = next(g for g in self.coordinator.data.gear if g.gear_id == self._gear_id)
+        return item.detail_raw or item.summary_raw
+
+
+class GearServiceStatusSensor(_GearEntityBase, SensorEntity):
+    _attr_translation_key = "gear_service_status"
+    _attr_icon = "mdi:tools"
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options: ClassVar[list[str]] = ["not_due", "due", "overdue"]
+
+    def __init__(self, coordinator: GarminDiveCoordinator, *, gear_id: int) -> None:
+        super().__init__(coordinator, gear_id=gear_id)
+        self._attr_unique_id = f"{self._account_id}_{gear_id}_service_status"
+
+    @property
+    def native_value(self) -> str | None:
+        ind = self._detail().get("dueIndicator")
+        return ind.lower() if ind else None
+
+
+class GearDaysUntilServiceSensor(_GearEntityBase, SensorEntity):
+    _attr_translation_key = "gear_days_until_service"
+    _attr_native_unit_of_measurement = "d"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:calendar-clock"
+
+    def __init__(self, coordinator: GarminDiveCoordinator, *, gear_id: int) -> None:
+        super().__init__(coordinator, gear_id=gear_id)
+        self._attr_unique_id = f"{self._account_id}_{gear_id}_days_until_service"
+
+    @property
+    def native_value(self) -> int | None:
+        return days_until_service(
+            next_service_date=self._detail().get("nextServiceDate"),
+            today=date.today(),
+        )
+
+
+class GearDateSensor(_GearEntityBase, SensorEntity):
+    """Generic date-valued gear sensor."""
+
+    _attr_device_class = SensorDeviceClass.DATE
+    _attr_icon = "mdi:calendar"
+
+    def __init__(
+        self,
+        coordinator: GarminDiveCoordinator,
+        *,
+        gear_id: int,
+        translation_key: str,
+        detail_field: str,
+        unique_suffix: str,
+    ) -> None:
+        super().__init__(coordinator, gear_id=gear_id)
+        self._attr_translation_key = translation_key
+        self._field = detail_field
+        self._attr_unique_id = f"{self._account_id}_{gear_id}_{unique_suffix}"
+
+    @property
+    def native_value(self) -> date | None:
+        v = self._detail().get(self._field)
+        return date.fromisoformat(v) if v else None
+
+
+class GearDivesWithSensor(_GearEntityBase, SensorEntity):
+    _attr_translation_key = "gear_dives_with"
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_icon = "mdi:counter"
+
+    def __init__(self, coordinator: GarminDiveCoordinator, *, gear_id: int) -> None:
+        super().__init__(coordinator, gear_id=gear_id)
+        self._attr_unique_id = f"{self._account_id}_{gear_id}_dives_with"
+
+    @property
+    def native_value(self) -> int:
+        stats = self._detail().get("stats", {}) or {}
+        return int(stats.get("numAssociatedDives") or 0)
+
+
+class GearTotalDiveTimeSensor(_GearEntityBase, SensorEntity):
+    _attr_translation_key = "gear_total_dive_time"
+    _attr_device_class = SensorDeviceClass.DURATION
+    _attr_native_unit_of_measurement = UnitOfTime.HOURS
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_icon = "mdi:timer-outline"
+
+    def __init__(self, coordinator: GarminDiveCoordinator, *, gear_id: int) -> None:
+        super().__init__(coordinator, gear_id=gear_id)
+        self._attr_unique_id = f"{self._account_id}_{gear_id}_total_dive_time"
+
+    @property
+    def native_value(self) -> float:
+        stats = self._detail().get("stats", {}) or {}
+        seconds = float(stats.get("totalAssociatedDiveTime") or 0)
+        return round(seconds / 3600, 3)
+
+
+class GearPurchasePriceSensor(_GearEntityBase, SensorEntity):
+    _attr_translation_key = "gear_purchase_price"
+    _attr_device_class = SensorDeviceClass.MONETARY
+    _attr_state_class = SensorStateClass.TOTAL
+    _attr_entity_category = "diagnostic"
+    _attr_icon = "mdi:cash"
+
+    def __init__(self, coordinator: GarminDiveCoordinator, *, gear_id: int) -> None:
+        super().__init__(coordinator, gear_id=gear_id)
+        self._attr_unique_id = f"{self._account_id}_{gear_id}_purchase_price"
+        currency = self._detail().get("purchaseCurrency") or "GBP"
+        self._attr_native_unit_of_measurement = currency
+
+    @property
+    def native_value(self) -> float | None:
+        v = self._detail().get("purchasePrice")
+        return float(v) if v is not None else None
+
+
+def build_gear_entities(coordinator: GarminDiveCoordinator) -> list[SensorEntity]:
+    entities: list[SensorEntity] = []
+    if not coordinator.data:
+        return entities
+    for item in coordinator.data.gear:
+        gid = item.gear_id
+        # Always-present sensors
+        entities.append(GearDivesWithSensor(coordinator, gear_id=gid))
+        entities.append(GearTotalDiveTimeSensor(coordinator, gear_id=gid))
+        if "purchasePrice" in (item.detail_raw or {}):
+            entities.append(GearPurchasePriceSensor(coordinator, gear_id=gid))
+        if (item.detail_raw or {}).get("purchaseDate"):
+            entities.append(
+                GearDateSensor(
+                    coordinator,
+                    gear_id=gid,
+                    translation_key="gear_purchase_date",
+                    detail_field="purchaseDate",
+                    unique_suffix="purchase_date",
+                )
+            )
+        # Service-related sensors
+        if is_serviceable(item.gear_type):
+            entities.append(GearServiceStatusSensor(coordinator, gear_id=gid))
+            if (item.detail_raw or {}).get("nextServiceDate"):
+                entities.append(GearDaysUntilServiceSensor(coordinator, gear_id=gid))
+                entities.append(
+                    GearDateSensor(
+                        coordinator,
+                        gear_id=gid,
+                        translation_key="gear_next_service_date",
+                        detail_field="nextServiceDate",
+                        unique_suffix="next_service_date",
+                    )
+                )
+            if (item.detail_raw or {}).get("lastServiceDate"):
+                entities.append(
+                    GearDateSensor(
+                        coordinator,
+                        gear_id=gid,
+                        translation_key="gear_last_service_date",
+                        detail_field="lastServiceDate",
+                        unique_suffix="last_service_date",
+                    )
+                )
+    return entities
+
+
 # --- Platform setup --------------------------------------------------------
 
 
@@ -282,4 +468,5 @@ async def async_setup_entry(
         DivesByTagSensor(coordinator),
         GearCountSensor(coordinator),
     ]
+    entities.extend(build_gear_entities(coordinator))
     async_add_entities(entities)

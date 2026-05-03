@@ -10,9 +10,12 @@ from custom_components.garmin_dive.sensor import (
     DiveLogYearSensor,
     DivesByTagSensor,
     GearCountSensor,
+    GearDaysUntilServiceSensor,
+    GearServiceStatusSensor,
     LastDiveMaxDepthSensor,
     LastDiveSensor,
     TotalDivesSensor,
+    build_gear_entities,
 )
 from tests.conftest_helpers import make_data, make_fake_coordinator
 
@@ -110,3 +113,44 @@ async def test_gear_count_state_and_breakdown(hass, load_fixture):
     assert breakdown["REGULATOR"] == 1
     assert breakdown["LIGHT"] == 1
     assert breakdown["CERTIFICATION"] == 1
+
+
+async def test_per_gear_sensors(hass, load_fixture):
+    data = make_data(
+        summary=load_fixture("dive_summary_full"),
+        gear_summary=load_fixture("gear_summary"),
+        gear_details={
+            141548: load_fixture("gear_detail_regulator"),
+            247811: load_fixture("gear_detail_light"),
+        },
+    )
+    coord = make_fake_coordinator(hass=hass, data=data)
+    entities = build_gear_entities(coord)
+    by_id = {(e.unique_id, type(e).__name__) for e in entities}
+    assert any(uid.endswith("_141548_service_status") for uid, _ in by_id)
+    # Light is non-serviceable -> no service_status sensor.
+    assert not any(uid.endswith("_247811_service_status") for uid, _ in by_id)
+
+
+async def test_gear_service_status_returns_due_indicator(hass, load_fixture):
+    data = make_data(
+        summary=load_fixture("dive_summary_full"),
+        gear_summary=load_fixture("gear_summary"),
+        gear_details={141548: load_fixture("gear_detail_regulator")},
+    )
+    coord = make_fake_coordinator(hass=hass, data=data)
+    sensor = GearServiceStatusSensor(coord, gear_id=141548)
+    assert sensor.native_value == "not_due"
+
+
+@freeze_time("2026-05-03")
+async def test_gear_days_until_service(hass, load_fixture):
+    data = make_data(
+        summary=load_fixture("dive_summary_full"),
+        gear_summary=load_fixture("gear_summary"),
+        gear_details={141548: load_fixture("gear_detail_regulator")},
+    )
+    coord = make_fake_coordinator(hass=hass, data=data)
+    sensor = GearDaysUntilServiceSensor(coord, gear_id=141548)
+    # nextServiceDate=2027-04-04, today=2026-05-03 -> 336 days
+    assert sensor.native_value == 336

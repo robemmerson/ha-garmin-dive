@@ -448,6 +448,100 @@ def build_gear_entities(coordinator: GarminDiveCoordinator) -> list[SensorEntity
     return entities
 
 
+class _DiveComputerEntityBase(GarminDiveSubDeviceEntity):
+    def __init__(self, coordinator: GarminDiveCoordinator, *, serial: str) -> None:
+        device_match = next(
+            d
+            for d in coordinator.data.devices
+            if d.serial_number and str(d.serial_number) == serial
+        )
+        super().__init__(
+            coordinator,
+            sub_device_id=f"device_{serial}",
+            sub_device_name=device_match.product_display_name,
+            manufacturer="Garmin",
+            model=device_match.product_display_name,
+            serial_number=serial,
+            entity_picture=device_match.raw.get("imageUrl"),
+        )
+        self._serial = serial
+
+
+class DiveComputerGearTrackingSensor(_DiveComputerEntityBase, SensorEntity):
+    _attr_translation_key = "dive_computer_gear_tracking_status"
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options: ClassVar[list[str]] = ["tracked", "dismissed"]
+    _attr_icon = "mdi:watch"
+
+    def __init__(self, coordinator: GarminDiveCoordinator, *, serial: str) -> None:
+        super().__init__(coordinator, serial=serial)
+        self._attr_unique_id = f"{self._account_id}_device_{serial}_gear_tracking"
+
+    @property
+    def native_value(self) -> str | None:
+        device = next(
+            d
+            for d in self.coordinator.data.devices
+            if d.serial_number and str(d.serial_number) == self._serial
+        )
+        v = device.raw.get("gearTrackingStatus")
+        return v.lower() if v else None
+
+
+class DiveComputerSerialSensor(_DiveComputerEntityBase, SensorEntity):
+    _attr_translation_key = "dive_computer_serial_number"
+    _attr_entity_category = "diagnostic"
+    _attr_icon = "mdi:identifier"
+
+    def __init__(self, coordinator: GarminDiveCoordinator, *, serial: str) -> None:
+        super().__init__(coordinator, serial=serial)
+        self._attr_unique_id = f"{self._account_id}_device_{serial}_serial"
+
+    @property
+    def native_value(self) -> str:
+        return self._serial
+
+
+class DiveComputerPartNumberSensor(_DiveComputerEntityBase, SensorEntity):
+    _attr_translation_key = "dive_computer_part_number"
+    _attr_entity_category = "diagnostic"
+    _attr_icon = "mdi:barcode"
+
+    def __init__(self, coordinator: GarminDiveCoordinator, *, serial: str) -> None:
+        super().__init__(coordinator, serial=serial)
+        self._attr_unique_id = f"{self._account_id}_device_{serial}_part_number"
+
+    @property
+    def native_value(self) -> str | None:
+        device = next(
+            d
+            for d in self.coordinator.data.devices
+            if d.serial_number and str(d.serial_number) == self._serial
+        )
+        return device.raw.get("partNumber")
+
+
+def build_dive_computer_entities(
+    coordinator: GarminDiveCoordinator,
+) -> list[SensorEntity]:
+    entities: list[SensorEntity] = []
+    if not coordinator.data:
+        return entities
+    seen: set[str] = set()
+    for device in coordinator.data.devices:
+        if device.serial_number is None:
+            continue  # skip cached/duplicate entries without a serial
+        serial = str(device.serial_number)
+        if serial in seen:
+            continue
+        seen.add(serial)
+        entities.append(DiveComputerGearTrackingSensor(coordinator, serial=serial))
+        entities.append(DiveComputerSerialSensor(coordinator, serial=serial))
+        if device.raw.get("partNumber"):
+            entities.append(DiveComputerPartNumberSensor(coordinator, serial=serial))
+    return entities
+
+
 # --- Platform setup --------------------------------------------------------
 
 
@@ -469,4 +563,5 @@ async def async_setup_entry(
         GearCountSensor(coordinator),
     ]
     entities.extend(build_gear_entities(coordinator))
+    entities.extend(build_dive_computer_entities(coordinator))
     async_add_entities(entities)

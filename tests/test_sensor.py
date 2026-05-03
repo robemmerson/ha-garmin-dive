@@ -15,6 +15,7 @@ from custom_components.garmin_dive.sensor import (
     LastDiveMaxDepthSensor,
     LastDiveSensor,
     TotalDivesSensor,
+    build_dive_computer_entities,
     build_gear_entities,
 )
 from tests.conftest_helpers import make_data, make_fake_coordinator
@@ -154,3 +155,17 @@ async def test_gear_days_until_service(hass, load_fixture):
     sensor = GearDaysUntilServiceSensor(coord, gear_id=141548)
     # nextServiceDate=2027-04-04, today=2026-05-03 -> 336 days
     assert sensor.native_value == 336
+
+
+async def test_dive_computer_sub_devices(hass, load_fixture):
+    data = make_data(
+        summary=load_fixture("dive_summary_full"),
+        devices=load_fixture("dive_devices"),
+    )
+    coord = make_fake_coordinator(hass=hass, data=data)
+    entities = build_dive_computer_entities(coord)
+    # Three dive_devices entries -> two with serial numbers (anonymous T1
+    # without serial is excluded as it's a duplicate/cached entry).
+    serials = {e._serial for e in entities if hasattr(e, "_serial") and e._serial}
+    assert "3403334227" in serials
+    assert "3399109144" in serials

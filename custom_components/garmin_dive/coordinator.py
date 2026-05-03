@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from .gear import GearSnapshot, needs_detail_fetch
+from .photos import PhotoCache, PhotoRecord
 
 if TYPE_CHECKING:
     from .api import GarminDiveClient
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -59,6 +63,8 @@ class DiveDevice:
 class GearItem:
     summary_raw: dict[str, Any]
     detail_raw: dict[str, Any] | None = None
+    photo_local_url: str | None = None
+    photo_thumb_url: str | None = None
 
     @property
     def gear_id(self) -> int:
@@ -95,6 +101,10 @@ async def build_data(
     current_user_date: str,
     previous_gear_last_modified: dict[int, str],
     results_per_page: int = 100,
+    photo_cache: PhotoCache | None = None,
+    http_session: Any | None = None,
+    profile_id: int | None = None,
+    year: int | None = None,
 ) -> CoordinatorData:
     """One refresh cycle: fan out concurrent calls and assemble CoordinatorData."""
     # Fan out the 4 unconditional calls in parallel.
@@ -106,7 +116,8 @@ async def build_data(
         summary_task, devices_task, tags_task, gear_summary_task
     )
 
-    # Conditional gear-detail fetches.
+    # Conditional gear-detail fetches. Per-item failures are tolerated so that
+    # a transient 5xx on one gear item does not abort the whole refresh cycle.
     to_fetch = needs_detail_fetch(gear_summary, previous=previous_gear_last_modified)
     detail_by_id: dict[int, dict[str, Any]] = {}
     if to_fetch:
@@ -119,6 +130,7 @@ async def build_data(
         )
         for result in raw_results:
             if isinstance(result, BaseException):
+                _LOGGER.warning("gear-detail fetch failed: %s", result)
                 continue
             detail_by_id[int(result["gearId"])] = result
 
@@ -129,6 +141,19 @@ async def build_data(
         )
         for item in gear_summary
     ]
+
+    # Photo collection (optional path)
+    if photo_cache is not None and http_session is not None:
+        records = list(_collect_gear_photo_records(gear_items))
+        if profile_id is not None and year is not None:
+            try:
+                photos_resp = await api.get_dive_photos(profile_id=profile_id, year=year)
+                records.extend(_collect_dive_photo_records(photos_resp))
+            except Exception as err:  # pragma: no cover - logged
+                _LOGGER.warning("Dive-photos GraphQL call failed: %s", err)
+        if records:
+            await photo_cache.download_records(records, session=http_session)
+            _attach_local_urls(gear_items, photo_cache)
 
     # Capture the snapshot used as `previous` on the next cycle.
     snapshot = GearSnapshot(
@@ -148,3 +173,44 @@ async def build_data(
         gear=gear_items,
         gear_snapshot=snapshot,
     )
+
+
+def _collect_gear_photo_records(gear_items: list[GearItem]):
+    for g in gear_items:
+        # Summary-level image (single)
+        img = g.summary_raw.get("image")
+        if img:
+            yield PhotoRecord.from_garmin_image(img)
+        # Detail-level images (list of images)
+        if g.detail_raw is not None:
+            for img in g.detail_raw.get("media", {}).get("images", []) or []:
+                yield PhotoRecord.from_garmin_image(img)
+
+
+def _collect_dive_photo_records(graphql_resp: dict[str, Any]):
+    items = graphql_resp.get("data", {}).get("diveImages", {}).get("items", []) or []
+    for item in items:
+        yield PhotoRecord.from_garmin_image(item)
+
+
+def _attach_local_urls(gear_items: list[GearItem], cache: PhotoCache) -> None:
+    for g in gear_items:
+        img = g.summary_raw.get("image") or _first_image(g.detail_raw)
+        if not img:
+            continue
+        record = PhotoRecord.from_garmin_image(img)
+        if "medium" in record.urls:
+            _, ext = record.urls["medium"]
+            g.photo_local_url = cache.local_url(
+                image_uuid=record.image_uuid, size="medium", ext=ext
+            )
+        if "thumb" in record.urls:
+            _, ext = record.urls["thumb"]
+            g.photo_thumb_url = cache.local_url(image_uuid=record.image_uuid, size="thumb", ext=ext)
+
+
+def _first_image(detail: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not detail:
+        return None
+    images = detail.get("media", {}).get("images") or []
+    return images[0] if images else None

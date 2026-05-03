@@ -10,6 +10,7 @@ from custom_components.garmin_dive.coordinator import (
     CoordinatorData,
     build_data,
 )
+from custom_components.garmin_dive.photos import PhotoCache
 
 
 @pytest.fixture
@@ -63,3 +64,30 @@ async def test_build_data_skips_detail_fetch_when_unchanged(fake_api, load_fixtu
         previous_gear_last_modified=previous,
     )
     fake_api.get_gear_detail.assert_not_awaited()
+
+
+async def test_build_data_with_photos_collects_gear_images(fake_api, tmp_path, load_fixture):
+    """Gear images embedded in summary responses get downloaded to the cache."""
+    summary_with_image = load_fixture("gear_summary")
+    fake_api.get_gear_summary = AsyncMock(return_value=summary_with_image)
+    fake_api.get_dive_photos = AsyncMock(return_value={"data": {"diveImages": {"items": []}}})
+
+    cache = PhotoCache(www_dir=tmp_path, account_short="abcd1234")
+    downloaded: list[str] = []
+
+    async def fake_download(records, *, session):
+        downloaded.extend(r.image_uuid for r in records)
+
+    cache.download_records = fake_download  # type: ignore[assignment]
+
+    data = await build_data(
+        api=fake_api,
+        current_user_date="2026-05-03",
+        previous_gear_last_modified={},
+        photo_cache=cache,
+        http_session=MagicMock(),
+        profile_id=106627261,
+        year=2026,
+    )
+    assert "315aa699-ea9b-4323-8177-3d8a77b28e24" in downloaded
+    assert any(g.photo_local_url for g in data.gear if g.gear_id == 247811)

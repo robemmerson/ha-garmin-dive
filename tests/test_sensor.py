@@ -7,6 +7,9 @@ from freezegun import freeze_time
 
 from custom_components.garmin_dive.sensor import (
     CurrentYearDivesSensor,
+    DiveLogYearSensor,
+    DivesByTagSensor,
+    GearCountSensor,
     LastDiveMaxDepthSensor,
     LastDiveSensor,
     TotalDivesSensor,
@@ -50,3 +53,60 @@ async def test_handles_empty_dive_list(hass):
     coord = make_fake_coordinator(hass=hass, data=data)
     assert LastDiveSensor(coord).native_value is None
     assert TotalDivesSensor(coord).native_value == 0
+
+
+async def test_dive_log_year_attribute_shape(hass, load_fixture):
+    data = make_data(summary=load_fixture("dive_summary_full"))
+    coord = make_fake_coordinator(hass=hass, data=data)
+    sensor = DiveLogYearSensor(coord)
+
+    attrs = sensor.extra_state_attributes
+    dives = attrs["dives"]
+    assert len(dives) == 3
+    first = dives[0]
+    assert {
+        "id",
+        "name",
+        "start",
+        "end",
+        "timezone",
+        "max_depth",
+        "average_depth",
+        "bottom_time",
+        "total_time",
+        "surface_interval",
+        "tags",
+        "gases",
+        "location",
+        "photos",
+        "connect_url",
+        "dive_computer",
+    } <= set(first.keys())
+    assert first["connect_url"] == "https://connect.garmin.com/modern/activity/20180546488"
+    # average_depth is unknown today (spec §13) -> None.
+    assert first["average_depth"] is None
+
+
+async def test_dives_by_tag_state_and_attrs(hass, load_fixture):
+    data = make_data(
+        summary=load_fixture("dive_summary_full"),
+        tags=load_fixture("dive_tags"),
+    )
+    coord = make_fake_coordinator(hass=hass, data=data)
+    sensor = DivesByTagSensor(coord)
+    assert sensor.native_value == 45 + 34 + 8 + 5 + 3 + 3 + 1
+    assert sensor.extra_state_attributes["RECREATIONAL"] == 45
+
+
+async def test_gear_count_state_and_breakdown(hass, load_fixture):
+    data = make_data(
+        summary=load_fixture("dive_summary_full"),
+        gear_summary=load_fixture("gear_summary"),
+    )
+    coord = make_fake_coordinator(hass=hass, data=data)
+    sensor = GearCountSensor(coord)
+    assert sensor.native_value == 3
+    breakdown = sensor.extra_state_attributes["by_type"]
+    assert breakdown["REGULATOR"] == 1
+    assert breakdown["LIGHT"] == 1
+    assert breakdown["CERTIFICATION"] == 1

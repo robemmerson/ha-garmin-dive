@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from collections import Counter
+from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.sensor import (
@@ -162,6 +163,105 @@ class LastDiveSurfaceIntervalSensor(GarminDiveAccountEntity, SensorEntity):
         return si / 3600 if si is not None else None
 
 
+class DiveLogYearSensor(GarminDiveAccountEntity, SensorEntity):
+    _attr_translation_key = "dive_log_year"
+    _attr_icon = "mdi:timeline-clock"
+
+    def __init__(self, coordinator: GarminDiveCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._account_id}_dive_log_year"
+
+    @property
+    def native_value(self) -> int:
+        if not self.coordinator.data:
+            return 0
+        year = date.today().year
+        return sum(
+            1
+            for d in self.coordinator.data.dives
+            if datetime.fromisoformat(d.start_time).year == year
+        )
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        if not self.coordinator.data:
+            return {"dives": []}
+        dives_payload = [self._dive_to_card(d) for d in self.coordinator.data.dives]
+        return {"dives": dives_payload}
+
+    def _dive_to_card(self, d: Dive) -> dict[str, Any]:
+        raw = d.raw
+        photo_for_dive = self._photo_for_dive(d)
+        start = datetime.fromisoformat(raw["startTime"])
+        total_seconds = float(raw["totalTime"])
+        end = (start + timedelta(seconds=total_seconds)).isoformat()
+        return {
+            "id": d.id,
+            "name": d.name,
+            "start": raw["startTime"],
+            "end": end,
+            "timezone": raw.get("timezone"),
+            "max_depth": raw.get("maxDepth"),
+            # average_depth: not present in /dive/summary; spec §13 leaves it
+            # to a future per-dive detail call.
+            "average_depth": None,
+            "bottom_time": (raw.get("bottomTime") or 0) / 60,
+            "total_time": total_seconds / 60,
+            "surface_interval": (raw.get("surfaceInterval") or 0) / 3600,
+            "tags": raw.get("diveTags") or [],
+            "gases": raw.get("gases") or [],
+            "location": raw.get("entryLoc"),
+            "photos": photo_for_dive,
+            "connect_url": _connect_url(raw.get("connectActivityId")),
+            "dive_computer": raw.get("activitySource"),
+        }
+
+    def _photo_for_dive(self, d: Dive) -> dict[str, str | None]:
+        # Photos are matched by eventDate == startTime (per the captured
+        # GraphQL response). The coordinator stores them on each dive in a
+        # later iteration; for now we surface an empty placeholder so the
+        # attribute shape is stable from day one.
+        return {"thumb": None, "medium": None, "large": None}
+
+
+class DivesByTagSensor(GarminDiveAccountEntity, SensorEntity):
+    _attr_translation_key = "dives_by_tag"
+    _attr_icon = "mdi:tag-multiple"
+
+    def __init__(self, coordinator: GarminDiveCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._account_id}_dives_by_tag"
+
+    @property
+    def native_value(self) -> int:
+        if not self.coordinator.data:
+            return 0
+        return sum(self.coordinator.data.dive_tags.values())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return dict(self.coordinator.data.dive_tags) if self.coordinator.data else {}
+
+
+class GearCountSensor(GarminDiveAccountEntity, SensorEntity):
+    _attr_translation_key = "gear_count"
+    _attr_icon = "mdi:bag-personal"
+
+    def __init__(self, coordinator: GarminDiveCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._account_id}_gear_count"
+
+    @property
+    def native_value(self) -> int:
+        return len(self.coordinator.data.gear) if self.coordinator.data else 0
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        if not self.coordinator.data:
+            return {"by_type": {}}
+        return {"by_type": dict(Counter(g.gear_type for g in self.coordinator.data.gear))}
+
+
 # --- Platform setup --------------------------------------------------------
 
 
@@ -178,5 +278,8 @@ async def async_setup_entry(
         LastDiveMaxDepthSensor(coordinator),
         LastDiveBottomTimeSensor(coordinator),
         LastDiveSurfaceIntervalSensor(coordinator),
+        DiveLogYearSensor(coordinator),
+        DivesByTagSensor(coordinator),
+        GearCountSensor(coordinator),
     ]
     async_add_entities(entities)

@@ -38,7 +38,69 @@ Email + password. If your Garmin account has MFA, you'll be prompted for the cod
 
 ## Dashboard
 
-See the **Dashboard** section below — *populated in Task 43*.
+Two dashboard recipes that go well with this integration. Both assume entity IDs `sensor.garmin_dive_rob_dive_log_year` and `calendar.garmin_dive_rob_dives` — adjust to match your account names.
+
+### Yearly dive timeline (horizontally scrolling cards)
+
+Requires the [`auto-entities`](https://github.com/thomasloven/lovelace-auto-entities) and [`mushroom`](https://github.com/piitaya/lovelace-mushroom) custom cards.
+
+```yaml
+type: horizontal-stack
+cards:
+  - type: custom:auto-entities
+    card:
+      type: horizontal-stack
+    card_param: cards
+    filter:
+      template: >
+        {% set dives = state_attr('sensor.garmin_dive_rob_dive_log_year', 'dives') or [] %}
+        {% for d in dives %}
+          {{ {
+            "type": "picture-elements",
+            "image": d.photos.medium or "/local/garmin_dive/placeholder.png",
+            "elements": [
+              {
+                "type": "state-label",
+                "entity": "sensor.garmin_dive_rob_last_dive",
+                "style": {"top": "10%", "left": "10%"}
+              },
+              {
+                "type": "custom:mushroom-template-card",
+                "primary": d.name,
+                "secondary": "{{ '%.1f m' | format(d.max_depth) }} · {{ '%.0f min' | format(d.bottom_time) }}",
+                "icon": "mdi:diving-scuba",
+                "style": {"top": "70%", "left": "5%", "width": "90%"}
+              }
+            ]
+          } }}
+        {% endfor %}
+```
+
+(For a polished version with photo lightbox, see the wiki — link added once published.)
+
+### Native HA Calendar card
+
+```yaml
+type: calendar
+entities:
+  - calendar.garmin_dive_rob_dives
+  - calendar.garmin_dive_ana_dives
+initial_view: dayGridMonth
+```
+
+### Service-due alert
+
+```yaml
+- alias: "Garmin Dive: gear service due notification"
+  trigger:
+    - platform: event
+      event_type: garmin_dive_service_due
+  action:
+    - service: notify.mobile_app_robs_phone
+      data:
+        title: "Diving gear service due"
+        message: "{{ trigger.event.data.gear.name }} is {{ trigger.event.data.indicator | lower }}"
+```
 
 ## Development
 

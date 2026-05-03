@@ -4,11 +4,11 @@ version = "0.1.0"
 description = "Home Assistant integration for Garmin Dive activity and gear data"
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 authors = [{ name = "Rob Emmerson" }]
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py313"
 line-length = 100
 extend-exclude = ["tests/fixtures"]
 

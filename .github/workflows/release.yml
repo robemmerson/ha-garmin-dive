@@ -11,13 +11,17 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Sync manifest version with release tag
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          python - <<PY
-          import json, pathlib
+          python - <<'PY'
+          import json, os, pathlib, re
+          version = os.environ["VERSION"].lstrip("v")
+          if not re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][\w.-]+)?", version):
+              raise SystemExit(f"refusing non-semver tag: {version!r}")
           p = pathlib.Path("custom_components/garmin_dive/manifest.json")
           m = json.loads(p.read_text())
-          m["version"] = "${VERSION}"
+          m["version"] = version
           p.write_text(json.dumps(m, indent=2) + "\n")
           PY
 

@@ -55,7 +55,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if entry.options.get(CONF_PHOTO_CACHE_ENABLED, DEFAULT_PHOTO_CACHE_ENABLED):
         www_dir = Path(hass.config.path("www"))
         await hass.async_add_executor_job(lambda: www_dir.mkdir(parents=True, exist_ok=True))
-        account_short = str(auth.profile_id)[:8]
+        account_short = str(auth.profile_id)
         photo_cache = PhotoCache(www_dir=www_dir, account_short=account_short)
 
     coordinator = GarminDiveCoordinator(

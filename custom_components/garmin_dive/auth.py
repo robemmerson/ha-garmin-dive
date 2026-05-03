@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any
@@ -15,6 +16,11 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
     from .api import GarminDiveClient
+
+
+def _chmod_user_only(path: str) -> None:
+    """chmod 0o600 — owner-only read/write."""
+    os.chmod(path, 0o600)
 
 
 MfaProvider = Callable[[], Awaitable[str]]
@@ -104,8 +110,14 @@ class GarminDiveAuth:
     # --- Persistence --------------------------------------------------------
 
     async def save_ha_garmin_session(self, hass: HomeAssistant, session_path: str) -> None:
-        """Persist the upstream ha-garmin session JSON to ``session_path``."""
+        """Persist the upstream ha-garmin session JSON to ``session_path``.
+
+        Tightens the file mode to 0o600 after the upstream library writes,
+        because the upstream library does not chmod and the default umask
+        leaves the OAuth tokens world-readable on shared HA configs.
+        """
         await hass.async_add_executor_job(self._ha.save_session, session_path)
+        await hass.async_add_executor_job(_chmod_user_only, session_path)
         self._session_path = session_path
 
     async def load_ha_garmin_session(self, hass: HomeAssistant, session_path: str) -> bool:

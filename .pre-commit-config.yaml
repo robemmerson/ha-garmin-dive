@@ -10,7 +10,9 @@ repos:
     rev: v2.3.0
     hooks:
       - id: codespell
-        args: [--skip, "tests/fixtures/*,*.json"]
+        args:
+          - --skip=tests/fixtures/*,*.json,.venv/*
+          - --ignore-words-list=hass,nd,assertin
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0

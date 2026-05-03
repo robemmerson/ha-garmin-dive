@@ -1,13 +1,13 @@
 {
   "domain": "garmin_dive",
   "name": "Garmin Dive",
-  "version": "0.1.0",
   "codeowners": ["@robemmerson"],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/robemmerson/ha-garmin-dive",
-  "issue_tracker": "https://github.com/robemmerson/ha-garmin-dive/issues",
-  "iot_class": "cloud_polling",
   "integration_type": "hub",
-  "requirements": ["ha-garmin>=0.1.19,<0.2"]
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/robemmerson/ha-garmin-dive/issues",
+  "requirements": ["ha-garmin>=0.1.19,<0.2"],
+  "version": "0.1.0"
 }

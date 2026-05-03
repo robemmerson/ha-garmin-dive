@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import json
+
 import aiohttp
 import pytest
 from aresponses import ResponsesMockServer
@@ -119,3 +121,40 @@ async def test_get_gear_detail(
     detail = await client.get_gear_detail(gear_id=141548, current_user_date="2026-05-03")
     assert detail["brand"] == "Atomic Aquatics"
     assert detail["nextServiceDate"] == "2027-04-04"
+
+
+async def test_graphql_posts_operation_and_variables(
+    aresponses: ResponsesMockServer, client: GarminDiveClient, load_fixture
+):
+    captured: dict[str, Any] = {}
+
+    async def handler(request):
+        captured["body"] = await request.json()
+        return aresponses.Response(
+            status=200,
+            text=json.dumps(load_fixture("dive_images_graphql")),
+        )
+
+    aresponses.add("gcs.garmin.com", "/diving/graphql/query", "POST", handler)
+    result = await client.graphql(
+        operation_name="DiveImagesByDateRange",
+        query="query DiveImagesByDateRange($playerId: Long!, $start: LocalDate!, $end: LocalDate!) { ... }",
+        variables={"playerId": 106627261, "start": "2026-01-01", "end": "2026-12-31"},
+    )
+    assert captured["body"]["operationName"] == "DiveImagesByDateRange"
+    assert captured["body"]["variables"]["playerId"] == 106627261
+    assert "extensions" in captured["body"]
+    assert result["data"]["diveImages"]["items"][0]["imageUUID"] == "3730581e-c80e-4c19-8513-cd403e1c72a5"
+
+
+async def test_get_dive_photos_by_year(
+    aresponses: ResponsesMockServer, client: GarminDiveClient, load_fixture
+):
+    aresponses.add(
+        "gcs.garmin.com",
+        "/diving/graphql/query",
+        "POST",
+        aresponses.Response(status=200, text=json.dumps(load_fixture("dive_images_graphql"))),
+    )
+    result = await client.get_dive_photos(profile_id=106627261, year=2025)
+    assert result["data"]["diveImages"]["items"][0]["entityReferenceId"] == "23285230"

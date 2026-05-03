@@ -17,6 +17,7 @@ from .const import (
     PATH_DIVE_TAGS,
     PATH_GEAR_DETAIL,
     PATH_GEAR_SUMMARY,
+    PATH_GRAPHQL,
 )
 
 GetTokenFn = Callable[[], Awaitable[str]]
@@ -87,4 +88,44 @@ class GarminDiveClient:
             HOST_GCS,
             PATH_GEAR_DETAIL.format(gear_id=gear_id),
             params={"current-user-date": current_user_date},
+        )
+
+    # ----- GraphQL ----------------------------------------------------------
+
+    async def graphql(
+        self,
+        *,
+        operation_name: str,
+        query: str,
+        variables: dict[str, Any],
+    ) -> dict[str, Any]:
+        body = {
+            "extensions": {"clientLibrary": {"name": "ha-garmin-dive", "version": "0.1.0"}},
+            "operationName": operation_name,
+            "query": query,
+            "variables": variables,
+        }
+        return await self._request("POST", HOST_GCS, PATH_GRAPHQL, json_body=body)
+
+    async def get_dive_photos(self, *, profile_id: int, year: int) -> dict[str, Any]:
+        # Operation name is provisional; refine when capturing the Photos
+        # screen during phase 4 (spec §13). The query string below is a
+        # plausible shape consistent with the captured response.
+        query = (
+            "query DiveImagesByDateRange("
+            "$playerId: Long!, $start: LocalDate!, $end: LocalDate!) { "
+            "diveImages(playerId: $playerId, startDate: $start, endDate: $end) "
+            "{ __typename items { __typename imageUUID inappropriateReviewStatus "
+            "timezone eventDate associatedEntityType associatedEntityName "
+            "entityReferenceId owner { __typename profileName playerProfileId } "
+            "versionedUrls { __typename key url urlExpiration version } } } }"
+        )
+        return await self.graphql(
+            operation_name="DiveImagesByDateRange",
+            query=query,
+            variables={
+                "playerId": profile_id,
+                "start": f"{year}-01-01",
+                "end": f"{year}-12-31",
+            },
         )

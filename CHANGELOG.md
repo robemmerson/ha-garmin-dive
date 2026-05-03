@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/robemmerson/ha-garmin-dive/compare/v0.2.0...v0.3.0) (2026-05-03)
+
+
+### Features
+
+* **photos:** wire dive-photo gallery via PlayerProfile GraphQL ([6c53d8a](https://github.com/robemmerson/ha-garmin-dive/commit/6c53d8aac647687a529b305f0a221b682e111822))
+
 ## [0.2.0](https://github.com/robemmerson/ha-garmin-dive/compare/v0.1.0...v0.2.0) (2026-05-03)
 
 

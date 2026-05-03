@@ -1,6 +1,6 @@
 [project]
 name = "ha-garmin-dive"
-version = "0.2.0"  # x-release-please-version
+version = "0.3.0"  # x-release-please-version
 description = "Home Assistant integration for Garmin Dive activity and gear data"
 readme = "README.md"
 license = { text = "MIT" }

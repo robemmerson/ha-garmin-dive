@@ -166,3 +166,98 @@ async def test_get_dive_photos_by_year(
     )
     result = await client.get_dive_photos(profile_id=106627261, year=2025)
     assert result["data"]["diveImages"]["items"][0]["entityReferenceId"] == "23285230"
+
+
+async def test_exchange_dive_audience(aresponses: ResponsesMockServer):
+    """Exchange uses the Connect bearer, not the Dive one."""
+    captured: dict[str, Any] = {}
+
+    async def handler(request):
+        captured["headers"] = dict(request.headers)
+        captured["body"] = await request.text()
+        return aresponses.Response(
+            status=200,
+            text=json.dumps(
+                {
+                    "access_token": "new-dive-token",
+                    "refresh_token": "new-dive-refresh",
+                    "token_type": "bearer",
+                    "expires_in": 86399,
+                    "refresh_token_expires_in": 2591999,
+                    "scope": "DIVE_API_READ DIVE_API_WRITE CONNECT_READ",
+                    "jti": "test-jti",
+                }
+            ),
+        )
+
+    aresponses.add(
+        "connectapi.garmin.com",
+        "/oauth-service/oauth/exchange/user/2.0",
+        "POST",
+        handler,
+    )
+
+    async with aiohttp.ClientSession() as session:
+
+        async def get_token() -> str:
+            return "should-not-be-called"
+
+        api = GarminDiveClient(session=session, get_token=get_token)
+        result = await api.exchange_dive_audience(connect_bearer="connect-bearer-xyz")
+    assert captured["headers"]["Authorization"] == "bearer connect-bearer-xyz"
+    assert "audience=DIVE_MOBILE_IOS_DI" in captured["body"]
+    assert result["access_token"] == "new-dive-token"
+
+
+async def test_get_social_profile(aresponses: ResponsesMockServer, load_fixture):
+    aresponses.add(
+        "connectapi.garmin.com",
+        "/userprofile-service/socialProfile/v2",
+        "GET",
+        aresponses.Response(status=200, text=json.dumps(load_fixture("social_profile_v2"))),
+    )
+
+    async with aiohttp.ClientSession() as session:
+
+        async def get_token() -> str:
+            return "should-not-be-called"
+
+        api = GarminDiveClient(session=session, get_token=get_token)
+        profile = await api.get_social_profile(connect_bearer="connect-bearer")
+    assert profile["profileId"] == 106627261
+    assert profile["userName"] == "test@example.invalid"
+
+
+async def test_refresh_dive_token(aresponses: ResponsesMockServer):
+    captured: dict[str, Any] = {}
+
+    async def handler(request):
+        captured["body"] = await request.text()
+        captured["headers"] = dict(request.headers)
+        return aresponses.Response(
+            status=200,
+            text=json.dumps(
+                {
+                    "access_token": "refreshed-dive-token",
+                    "refresh_token": "new-refresh-rotated",
+                    "token_type": "bearer",
+                    "expires_in": 86399,
+                    "refresh_token_expires_in": 2591999,
+                    "scope": "DIVE_API_READ",
+                    "jti": "test-jti",
+                }
+            ),
+        )
+
+    aresponses.add("diauth.garmin.com", "/di-oauth2-service/oauth/token", "POST", handler)
+    async with aiohttp.ClientSession() as session:
+
+        async def get_token() -> str:
+            return "unused"
+
+        api = GarminDiveClient(session=session, get_token=get_token)
+        result = await api.refresh_dive_token(refresh_token="dive-refresh-abc")
+    assert "grant_type=refresh_token" in captured["body"]
+    assert "refresh_token=dive-refresh-abc" in captured["body"]
+    assert "client_id=DIVE_MOBILE_IOS_DI" in captured["body"]
+    assert result["access_token"] == "refreshed-dive-token"

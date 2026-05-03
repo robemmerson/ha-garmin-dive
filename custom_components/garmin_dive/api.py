@@ -11,7 +11,11 @@ from .const import (
     APP_USER_AGENT,
     APP_X_APP_VER,
     APP_X_LANG,
+    DIVE_OAUTH_AUDIENCE,
+    DIVE_OAUTH_CLIENT_ID,
     GEAR_TYPES,
+    HOST_CONNECT_API,
+    HOST_DIAUTH,
     HOST_GCS,
     PATH_DIVE_DEVICES,
     PATH_DIVE_SUMMARY,
@@ -19,6 +23,9 @@ from .const import (
     PATH_GEAR_DETAIL,
     PATH_GEAR_SUMMARY,
     PATH_GRAPHQL,
+    PATH_OAUTH_EXCHANGE,
+    PATH_OAUTH_TOKEN,
+    PATH_SOCIAL_PROFILE_V2,
 )
 
 GetTokenFn = Callable[[], Awaitable[str]]
@@ -128,3 +135,54 @@ class GarminDiveClient:
                 "end": f"{year}-12-31",
             },
         )
+
+    # ----- Auxiliary auth + identity calls ----------------------------------
+
+    async def exchange_dive_audience(self, *, connect_bearer: str) -> dict[str, Any]:
+        """Exchange the Connect OAuth2 token for a DIVE-scoped one."""
+        async with self._session.post(
+            f"{HOST_CONNECT_API}{PATH_OAUTH_EXCHANGE}",
+            data={"audience": DIVE_OAUTH_AUDIENCE},
+            headers={
+                "Authorization": f"bearer {connect_bearer}",
+                "Accept": "application/json",
+                "User-Agent": APP_USER_AGENT,
+                "X-App-Ver": APP_X_APP_VER,
+                "X-Lang": APP_X_LANG,
+            },
+        ) as resp:
+            resp.raise_for_status()
+            return await resp.json(content_type=None)
+
+    async def refresh_dive_token(self, *, refresh_token: str) -> dict[str, Any]:
+        """Use the Dive-scoped refresh token to mint a new Dive access token."""
+        async with self._session.post(
+            f"{HOST_DIAUTH}{PATH_OAUTH_TOKEN}",
+            data={
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+                "client_id": DIVE_OAUTH_CLIENT_ID,
+            },
+            headers={
+                "Accept": "application/json",
+                "User-Agent": APP_USER_AGENT,
+                "X-App-Ver": APP_X_APP_VER,
+                "X-Lang": APP_X_LANG,
+            },
+        ) as resp:
+            resp.raise_for_status()
+            return await resp.json(content_type=None)
+
+    async def get_social_profile(self, *, connect_bearer: str) -> dict[str, Any]:
+        async with self._session.get(
+            f"{HOST_CONNECT_API}{PATH_SOCIAL_PROFILE_V2}",
+            headers={
+                "Authorization": f"bearer {connect_bearer}",
+                "Accept": "application/json",
+                "User-Agent": APP_USER_AGENT,
+                "X-App-Ver": APP_X_APP_VER,
+                "X-Lang": APP_X_LANG,
+            },
+        ) as resp:
+            resp.raise_for_status()
+            return await resp.json(content_type=None)

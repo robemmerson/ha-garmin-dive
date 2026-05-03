@@ -31,7 +31,7 @@ async def test_last_dive_state_and_attributes(hass, load_fixture):
     attrs = sensor.extra_state_attributes
     assert attrs["max_depth"] == pytest.approx(26.373)
     assert attrs["bottom_time_minutes"] == pytest.approx(2747.59 / 60)
-    assert attrs["connect_url"] == "https://connect.garmin.com/modern/activity/20180546488"
+    assert attrs["connect_url"] == "https://connect.garmin.com/modern/activity/99000001"
 
 
 async def test_total_and_current_year_dives(hass, load_fixture):
@@ -83,10 +83,13 @@ async def test_dive_log_year_attribute_shape(hass, load_fixture):
         "gases",
         "location",
         "photos",
+        "photo_count",
         "connect_url",
         "dive_computer",
     } <= set(first.keys())
-    assert first["connect_url"] == "https://connect.garmin.com/modern/activity/20180546488"
+    assert first["photos"] == {"thumb": None, "medium": None, "large": None}
+    assert first["photo_count"] == 0
+    assert first["connect_url"] == "https://connect.garmin.com/modern/activity/99000001"
     # average_depth is unknown today (spec §13) -> None.
     assert first["average_depth"] is None
 
@@ -167,5 +170,5 @@ async def test_dive_computer_sub_devices(hass, load_fixture):
     # Three dive_devices entries -> two with serial numbers (anonymous T1
     # without serial is excluded as it's a duplicate/cached entry).
     serials = {e._serial for e in entities if hasattr(e, "_serial") and e._serial}
-    assert "3403334227" in serials
-    assert "3399109144" in serials
+    assert "1000000001" in serials
+    assert "1000000002" in serials

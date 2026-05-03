@@ -114,26 +114,31 @@ class GarminDiveClient:
         return await self._request("POST", HOST_GCS, PATH_GRAPHQL, json_body=body)
 
     async def get_dive_photos(self, *, profile_id: int, year: int) -> dict[str, Any]:
-        # Operation name is provisional; refine when capturing the Photos
-        # screen during phase 4 (spec §13). The query string below is a
-        # plausible shape consistent with the captured response.
+        # The `year` arg is unused: PlayerProfile returns the player's full
+        # photo timeline, which the coordinator filters by dive eventDate.
+        # Kept for signature stability with the rest of the build_data path.
+        del year
         query = (
-            "query DiveImagesByDateRange("
-            "$playerId: Long!, $start: LocalDate!, $end: LocalDate!) { "
-            "diveImages(playerId: $playerId, startDate: $start, endDate: $end) "
-            "{ __typename items { __typename imageUUID inappropriateReviewStatus "
-            "timezone eventDate associatedEntityType associatedEntityName "
-            "entityReferenceId owner { __typename profileName playerProfileId } "
-            "versionedUrls { __typename key url urlExpiration version } } } }"
+            "query PlayerProfile($playerId: Long!) { "
+            "playerProfile(playerId: $playerId) { "
+            "__typename "
+            "playerProfileId "
+            "profileName "
+            "medias { "
+            "__typename totalCount "
+            "content { "
+            "__typename "
+            "... on Image { "
+            "imageUUID inappropriateReviewStatus timezone eventDate "
+            "associatedEntityType associatedEntityName entityReferenceId "
+            "owner { __typename profileName playerProfileId } "
+            "versionedUrls { __typename key url urlExpiration version } "
+            "} } } } }"
         )
         return await self.graphql(
-            operation_name="DiveImagesByDateRange",
+            operation_name="PlayerProfile",
             query=query,
-            variables={
-                "playerId": profile_id,
-                "start": f"{year}-01-01",
-                "end": f"{year}-12-31",
-            },
+            variables={"playerId": profile_id},
         )
 
     # ----- Auxiliary auth + identity calls ----------------------------------

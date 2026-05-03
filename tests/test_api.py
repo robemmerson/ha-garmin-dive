@@ -139,33 +139,37 @@ async def test_graphql_posts_operation_and_variables(
         )
 
     aresponses.add("gcs.garmin.com", "/diving/graphql/query", "POST", handler)
-    query_str = (
-        "query DiveImagesByDateRange("
-        "$playerId: Long!, $start: LocalDate!, $end: LocalDate!) { ... }"
-    )
+    query_str = "query PlayerProfile($playerId: Long!) { ... }"
     result = await client.graphql(
-        operation_name="DiveImagesByDateRange",
+        operation_name="PlayerProfile",
         query=query_str,
-        variables={"playerId": 106627261, "start": "2026-01-01", "end": "2026-12-31"},
+        variables={"playerId": 999000111},
     )
-    assert captured["body"]["operationName"] == "DiveImagesByDateRange"
-    assert captured["body"]["variables"]["playerId"] == 106627261
+    assert captured["body"]["operationName"] == "PlayerProfile"
+    assert captured["body"]["variables"]["playerId"] == 999000111
     assert "extensions" in captured["body"]
-    expected_uuid = "3730581e-c80e-4c19-8513-cd403e1c72a5"
-    assert result["data"]["diveImages"]["items"][0]["imageUUID"] == expected_uuid
+    first_image = result["data"]["playerProfile"]["medias"]["content"][0]
+    assert first_image["imageUUID"] == "00000000-0000-4000-8000-000000000001"
 
 
-async def test_get_dive_photos_by_year(
+async def test_get_dive_photos_player_profile(
     aresponses: ResponsesMockServer, client: GarminDiveClient, load_fixture
 ):
-    aresponses.add(
-        "gcs.garmin.com",
-        "/diving/graphql/query",
-        "POST",
-        aresponses.Response(status=200, text=json.dumps(load_fixture("dive_images_graphql"))),
-    )
-    result = await client.get_dive_photos(profile_id=106627261, year=2025)
-    assert result["data"]["diveImages"]["items"][0]["entityReferenceId"] == "23285230"
+    captured: dict[str, Any] = {}
+
+    async def handler(request):
+        captured["body"] = await request.json()
+        return aresponses.Response(
+            status=200,
+            text=json.dumps(load_fixture("dive_images_graphql")),
+        )
+
+    aresponses.add("gcs.garmin.com", "/diving/graphql/query", "POST", handler)
+    result = await client.get_dive_photos(profile_id=999000111, year=2025)
+    assert captured["body"]["operationName"] == "PlayerProfile"
+    assert captured["body"]["variables"] == {"playerId": 999000111}
+    images = result["data"]["playerProfile"]["medias"]["content"]
+    assert images[0]["entityReferenceId"] == "1000001"
 
 
 async def test_exchange_dive_audience(aresponses: ResponsesMockServer):
@@ -224,7 +228,7 @@ async def test_get_social_profile(aresponses: ResponsesMockServer, load_fixture)
 
         api = GarminDiveClient(session=session, get_token=get_token)
         profile = await api.get_social_profile(connect_bearer="connect-bearer")
-    assert profile["profileId"] == 106627261
+    assert profile["profileId"] == 999000111
     assert profile["userName"] == "test@example.invalid"
 
 

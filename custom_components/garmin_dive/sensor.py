@@ -192,7 +192,6 @@ class DiveLogYearSensor(GarminDiveAccountEntity, SensorEntity):
 
     def _dive_to_card(self, d: Dive) -> dict[str, Any]:
         raw = d.raw
-        photo_for_dive = self._photo_for_dive(d)
         start = datetime.fromisoformat(raw["startTime"])
         total_seconds = float(raw["totalTime"])
         end = (start + timedelta(seconds=total_seconds)).isoformat()
@@ -212,17 +211,11 @@ class DiveLogYearSensor(GarminDiveAccountEntity, SensorEntity):
             "tags": raw.get("diveTags") or [],
             "gases": raw.get("gases") or [],
             "location": raw.get("entryLoc"),
-            "photos": photo_for_dive,
+            "photos": dict(d.photos),
+            "photo_count": d.photo_count,
             "connect_url": _connect_url(raw.get("connectActivityId")),
             "dive_computer": raw.get("activitySource"),
         }
-
-    def _photo_for_dive(self, d: Dive) -> dict[str, str | None]:
-        # Photos are matched by eventDate == startTime (per the captured
-        # GraphQL response). The coordinator stores them on each dive in a
-        # later iteration; for now we surface an empty placeholder so the
-        # attribute shape is stable from day one.
-        return {"thumb": None, "medium": None, "large": None}
 
 
 class DivesByTagSensor(GarminDiveAccountEntity, SensorEntity):

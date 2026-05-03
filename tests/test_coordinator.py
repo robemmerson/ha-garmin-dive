@@ -72,7 +72,9 @@ async def test_build_data_with_photos_collects_gear_images(fake_api, tmp_path, l
     """Gear images embedded in summary responses get downloaded to the cache."""
     summary_with_image = load_fixture("gear_summary")
     fake_api.get_gear_summary = AsyncMock(return_value=summary_with_image)
-    fake_api.get_dive_photos = AsyncMock(return_value={"data": {"diveImages": {"items": []}}})
+    fake_api.get_dive_photos = AsyncMock(
+        return_value={"data": {"playerProfile": {"medias": {"content": []}}}}
+    )
 
     cache = PhotoCache(www_dir=tmp_path, account_short="abcd1234")
     downloaded: list[str] = []
@@ -88,17 +90,52 @@ async def test_build_data_with_photos_collects_gear_images(fake_api, tmp_path, l
         previous_gear_last_modified={},
         photo_cache=cache,
         http_session=MagicMock(),
-        profile_id=106627261,
+        profile_id=999000111,
         year=2026,
     )
-    assert "315aa699-ea9b-4323-8177-3d8a77b28e24" in downloaded
+    assert "00000000-0000-4000-8000-000000000003" in downloaded
     assert any(g.photo_local_url for g in data.gear if g.gear_id == 247811)
+
+
+async def test_build_data_attaches_dive_photos_by_event_date(fake_api, tmp_path, load_fixture):
+    """Photos with eventDate matching a dive's startTime are attached to the dive."""
+    fake_api.get_dive_photos = AsyncMock(return_value=load_fixture("dive_images_graphql"))
+
+    cache = PhotoCache(www_dir=tmp_path, account_short="abcd1234")
+
+    async def fake_download(records, *, session):
+        return None
+
+    cache.download_records = fake_download  # type: ignore[assignment]
+
+    data = await build_data(
+        api=fake_api,
+        current_user_date="2026-05-03",
+        previous_gear_last_modified={},
+        photo_cache=cache,
+        http_session=MagicMock(),
+        profile_id=999000111,
+        year=2026,
+    )
+
+    # Two photos share startTime "2025-06-15T10:00:00+00:00" — that dive is id 10000001.
+    dive_with_photos = next(d for d in data.dives if d.id == 10000001)
+    assert dive_with_photos.photo_count == 2
+    assert dive_with_photos.photos["medium"] is not None
+    assert "/local/garmin_dive/abcd1234/" in dive_with_photos.photos["medium"]
+    # One photo at "2025-06-14T11:30:00+00:00" → dive 10000003.
+    other_dive = next(d for d in data.dives if d.id == 10000003)
+    assert other_dive.photo_count == 1
+    # The remaining dive has no matching photo.
+    no_photo_dive = next(d for d in data.dives if d.id == 10000002)
+    assert no_photo_dive.photo_count == 0
+    assert no_photo_dive.photos == {"thumb": None, "medium": None, "large": None}
 
 
 async def test_coordinator_fires_new_dive_event(hass, fake_api):
     """When totalCount increases, fire garmin_dive_new_dive."""
     auth = MagicMock()
-    auth.profile_id = 106627261
+    auth.profile_id = 999000111
 
     coordinator = GarminDiveCoordinator(
         hass,
@@ -108,8 +145,8 @@ async def test_coordinator_fires_new_dive_event(hass, fake_api):
         http_session=MagicMock(),
         scan_interval_minutes=120,
     )
-    # Seed with a previous snapshot saying we knew of dives 23285230 and 23261609.
-    coordinator._known_dive_ids = {23285230, 23261609}
+    # Seed with a previous snapshot saying we knew of dives 10000001 and 10000003.
+    coordinator._known_dive_ids = {10000001, 10000003}
 
     fired: list = []
     hass.bus.async_listen(EVENT_NEW_DIVE, lambda evt: fired.append(evt.data))
@@ -118,6 +155,6 @@ async def test_coordinator_fires_new_dive_event(hass, fake_api):
     await hass.async_block_till_done()
 
     new_ids = [d["dive"]["id"] for d in fired]
-    assert 23285231 in new_ids  # the new dive id appearing this cycle
-    assert 23285230 not in new_ids
-    assert fired[0]["account_id"] == "106627261"
+    assert 10000002 in new_ids  # the new dive id appearing this cycle
+    assert 10000001 not in new_ids
+    assert fired[0]["account_id"] == "999000111"

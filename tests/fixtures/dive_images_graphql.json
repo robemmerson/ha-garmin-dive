@@ -1,47 +1,134 @@
 {
   "data": {
-    "diveImages": {
-      "__typename": "ImageList",
-      "items": [
-        {
-          "__typename": "Image",
-          "imageUUID": "3730581e-c80e-4c19-8513-cd403e1c72a5",
-          "inappropriateReviewStatus": "PASSED_BY_ALGORITHM",
-          "timezone": "UTC",
-          "eventDate": "2025-06-15T10:00:00+00:00",
-          "associatedEntityType": "SINGLE_GAS",
-          "associatedEntityName": null,
-          "entityReferenceId": "23285230",
-          "owner": {
-            "__typename": "PlayerProfile",
-            "profileName": "test-display-name",
-            "playerProfileId": 106627261
+    "playerProfile": {
+      "__typename": "PlayerProfile",
+      "playerProfileId": 999000111,
+      "profileName": "test-display-name",
+      "medias": {
+        "__typename": "Page_Media",
+        "totalCount": 4,
+        "content": [
+          {
+            "__typename": "Image",
+            "imageUUID": "00000000-0000-4000-8000-000000000001",
+            "inappropriateReviewStatus": "PASSED_BY_ALGORITHM",
+            "timezone": "UTC",
+            "eventDate": "2025-06-15T10:00:00+00:00",
+            "associatedEntityType": "SINGLE_GAS",
+            "associatedEntityName": null,
+            "entityReferenceId": "1000001",
+            "owner": {
+              "__typename": "PlayerProfile",
+              "profileName": "test-display-name",
+              "playerProfileId": 999000111
+            },
+            "versionedUrls": [
+              {
+                "__typename": "ExpiringURL",
+                "key": "fixture-aaa-smth.jpeg",
+                "url": "https://example.invalid/fixture-aaa-smth.jpeg?sig=test",
+                "urlExpiration": "2026-05-04T01:54:47Z",
+                "version": "SMALL_THUMBNAIL"
+              },
+              {
+                "__typename": "ExpiringURL",
+                "key": "fixture-aaa-mdfd.jpeg",
+                "url": "https://example.invalid/fixture-aaa-mdfd.jpeg?sig=test",
+                "urlExpiration": "2026-05-04T01:54:47Z",
+                "version": "MEDIUM_FEED"
+              },
+              {
+                "__typename": "ExpiringURL",
+                "key": "fixture-aaa-larg.jpeg",
+                "url": "https://example.invalid/fixture-aaa-larg.jpeg?sig=test",
+                "urlExpiration": "2026-05-04T01:54:47Z",
+                "version": "LARGE"
+              }
+            ]
           },
-          "versionedUrls": [
-            {
-              "__typename": "ExpiringURL",
-              "key": "3730581e-smth.jpeg",
-              "url": "https://example.invalid/3730581e-smth.jpeg?sig=test",
-              "urlExpiration": "2026-05-04T01:54:47Z",
-              "version": "SMALL_THUMBNAIL"
+          {
+            "__typename": "Image",
+            "imageUUID": "00000000-0000-4000-8000-000000000003",
+            "inappropriateReviewStatus": "PASSED_BY_ALGORITHM",
+            "timezone": "UTC",
+            "eventDate": "2025-06-15T10:00:00+00:00",
+            "associatedEntityType": "SINGLE_GAS",
+            "associatedEntityName": null,
+            "entityReferenceId": "1000002",
+            "owner": {
+              "__typename": "PlayerProfile",
+              "profileName": "test-display-name",
+              "playerProfileId": 999000111
             },
-            {
-              "__typename": "ExpiringURL",
-              "key": "3730581e-mdfd.jpeg",
-              "url": "https://example.invalid/3730581e-mdfd.jpeg?sig=test",
-              "urlExpiration": "2026-05-04T01:54:47Z",
-              "version": "MEDIUM_FEED"
+            "versionedUrls": [
+              {
+                "__typename": "ExpiringURL",
+                "key": "fixture-ccc-smth.jpeg",
+                "url": "https://example.invalid/fixture-ccc-smth.jpeg?sig=test",
+                "urlExpiration": "2026-05-04T01:54:47Z",
+                "version": "SMALL_THUMBNAIL"
+              },
+              {
+                "__typename": "ExpiringURL",
+                "key": "fixture-ccc-mdfd.jpeg",
+                "url": "https://example.invalid/fixture-ccc-mdfd.jpeg?sig=test",
+                "urlExpiration": "2026-05-04T01:54:47Z",
+                "version": "MEDIUM_FEED"
+              },
+              {
+                "__typename": "ExpiringURL",
+                "key": "fixture-ccc-larg.jpeg",
+                "url": "https://example.invalid/fixture-ccc-larg.jpeg?sig=test",
+                "urlExpiration": "2026-05-04T01:54:47Z",
+                "version": "LARGE"
+              }
+            ]
+          },
+          {
+            "__typename": "Image",
+            "imageUUID": "00000000-0000-4000-8000-000000000002",
+            "inappropriateReviewStatus": "PASSED_BY_ALGORITHM",
+            "timezone": "UTC",
+            "eventDate": "2025-06-14T11:30:00+00:00",
+            "associatedEntityType": "SINGLE_GAS",
+            "associatedEntityName": null,
+            "entityReferenceId": "2000001",
+            "owner": {
+              "__typename": "PlayerProfile",
+              "profileName": "test-display-name",
+              "playerProfileId": 999000111
             },
-            {
-              "__typename": "ExpiringURL",
-              "key": "3730581e-larg.jpeg",
-              "url": "https://example.invalid/3730581e-larg.jpeg?sig=test",
-              "urlExpiration": "2026-05-04T01:54:47Z",
-              "version": "LARGE"
-            }
-          ]
-        }
-      ]
+            "versionedUrls": [
+              {
+                "__typename": "ExpiringURL",
+                "key": "fixture-bbb-smth.jpeg",
+                "url": "https://example.invalid/fixture-bbb-smth.jpeg?sig=test",
+                "urlExpiration": "2026-05-04T01:54:47Z",
+                "version": "SMALL_THUMBNAIL"
+              },
+              {
+                "__typename": "ExpiringURL",
+                "key": "fixture-bbb-mdfd.jpeg",
+                "url": "https://example.invalid/fixture-bbb-mdfd.jpeg?sig=test",
+                "urlExpiration": "2026-05-04T01:54:47Z",
+                "version": "MEDIUM_FEED"
+              },
+              {
+                "__typename": "ExpiringURL",
+                "key": "fixture-bbb-larg.jpeg",
+                "url": "https://example.invalid/fixture-bbb-larg.jpeg?sig=test",
+                "urlExpiration": "2026-05-04T01:54:47Z",
+                "version": "LARGE"
+              }
+            ]
+          },
+          {
+            "__typename": "Video",
+            "videoUUID": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+            "eventDate": "2025-06-15T10:00:00+00:00"
+          }
+        ]
+      }
     }
   }
 }

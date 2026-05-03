@@ -6,7 +6,7 @@ import asyncio
 import logging
 from collections.abc import Iterator
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.core import HomeAssistant
@@ -22,9 +22,15 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
+def _empty_photos() -> dict[str, str | None]:
+    return {"thumb": None, "medium": None, "large": None}
+
+
 @dataclass(slots=True)
 class Dive:
     raw: dict[str, Any]
+    photos: dict[str, str | None] = field(default_factory=_empty_photos)
+    photo_count: int = 0
 
     @property
     def id(self) -> int:
@@ -147,19 +153,25 @@ async def build_data(
         )
         for item in gear_summary
     ]
+    dives = [Dive(raw=d) for d in summary["diveActivities"]]
 
     # Photo collection (optional path)
     if photo_cache is not None and http_session is not None:
         records = list(_collect_gear_photo_records(gear_items))
+        photos_by_event: dict[str, list[PhotoRecord]] = {}
         if profile_id is not None and year is not None:
             try:
                 photos_resp = await api.get_dive_photos(profile_id=profile_id, year=year)
-                records.extend(_collect_dive_photo_records(photos_resp))
+                photos_by_event = _build_dive_photo_index(photos_resp)
+                for recs in photos_by_event.values():
+                    records.extend(recs)
             except Exception as err:  # pragma: no cover - logged
                 _LOGGER.warning("Dive-photos GraphQL call failed: %s", err)
         if records:
             await photo_cache.download_records(records, session=http_session)
             _attach_local_urls(gear_items, photo_cache)
+        if photos_by_event:
+            _attach_dive_photos(dives, photos_by_event, photo_cache)
 
     # Capture the snapshot used as `previous` on the next cycle.
     snapshot = GearSnapshot(
@@ -173,7 +185,7 @@ async def build_data(
 
     return CoordinatorData(
         total_dives=int(summary["totalCount"]),
-        dives=[Dive(raw=d) for d in summary["diveActivities"]],
+        dives=dives,
         devices=[DiveDevice(raw=d) for d in devices_raw],
         dive_tags=tags,
         gear=gear_items,
@@ -193,10 +205,59 @@ def _collect_gear_photo_records(gear_items: list[GearItem]) -> Iterator[PhotoRec
                 yield PhotoRecord.from_garmin_image(img)
 
 
-def _collect_dive_photo_records(graphql_resp: dict[str, Any]) -> Iterator[PhotoRecord]:
-    items = graphql_resp.get("data", {}).get("diveImages", {}).get("items", []) or []
+def _build_dive_photo_index(graphql_resp: dict[str, Any]) -> dict[str, list[PhotoRecord]]:
+    """Group dive photos by `eventDate` (matches each dive's `startTime`)."""
+    by_event: dict[str, list[PhotoRecord]] = {}
+    items = (
+        graphql_resp.get("data", {}).get("playerProfile", {}).get("medias", {}).get("content") or []
+    )
     for item in items:
-        yield PhotoRecord.from_garmin_image(item)
+        if item.get("__typename") != "Image":
+            continue
+        event_date = item.get("eventDate")
+        if not event_date or not item.get("imageUUID"):
+            continue
+        by_event.setdefault(event_date, []).append(PhotoRecord.from_garmin_image(item))
+    return by_event
+
+
+def _attach_dive_photos(
+    dives: list[Dive],
+    by_event: dict[str, list[PhotoRecord]],
+    cache: PhotoCache,
+) -> None:
+    """Attach the first photo's local URLs to each matching dive.
+
+    Matching is on parsed datetimes so equivalent ISO strings (e.g. `+0300`
+    vs `+03:00`) still match. `photo_count` exposes the full per-dive total.
+    """
+    parsed_events: dict[datetime, str] = {}
+    for ev_str in by_event:
+        try:
+            parsed_events[datetime.fromisoformat(ev_str)] = ev_str
+        except ValueError:
+            continue
+    for dive in dives:
+        try:
+            dive_dt = datetime.fromisoformat(dive.start_time)
+        except ValueError:
+            continue
+        match = parsed_events.get(dive_dt)
+        if match is None:
+            continue
+        records = by_event[match]
+        if not records:
+            continue
+        dive.photo_count = len(records)
+        first = records[0]
+        urls: dict[str, str | None] = _empty_photos()
+        for size in ("thumb", "medium", "large"):
+            entry = first.urls.get(size)
+            if entry is None:
+                continue
+            _, ext = entry
+            urls[size] = cache.local_url(image_uuid=first.image_uuid, size=size, ext=ext)
+        dive.photos = urls
 
 
 def _attach_local_urls(gear_items: list[GearItem], cache: PhotoCache) -> None:

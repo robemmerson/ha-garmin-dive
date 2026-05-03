@@ -12,7 +12,7 @@ repos:
       - id: codespell
         args:
           - --skip=tests/fixtures/*,*.json,.venv/*
-          - --ignore-words-list=hass,nd,assertin
+          - --ignore-words-list=hass,nd,assertin,medias
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0

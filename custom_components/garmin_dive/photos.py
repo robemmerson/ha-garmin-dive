@@ -86,15 +86,15 @@ class PhotoCache:
     async def _download_one(self, record: PhotoRecord, *, session: aiohttp.ClientSession) -> None:
         for size, (url, ext) in record.urls.items():
             target = self.resolve_path(image_uuid=record.image_uuid, size=size, ext=ext)
-            if target.exists():
+            if await asyncio.to_thread(target.exists):
                 continue
-            target.parent.mkdir(parents=True, exist_ok=True)
+            await asyncio.to_thread(target.parent.mkdir, parents=True, exist_ok=True)
             async with self._semaphore:
                 try:
                     async with session.get(url) as resp:
                         resp.raise_for_status()
                         data = await resp.read()
-                    target.write_bytes(data)
+                    await asyncio.to_thread(target.write_bytes, data)
                 except aiohttp.ClientError as err:  # pragma: no cover - logged
                     _LOGGER.warning(
                         "Failed to download photo %s/%s: %s",

@@ -6,6 +6,7 @@ import asyncio
 import time
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from ha_garmin import GarminMFARequired
 
 from custom_components.garmin_dive.auth import GarminDiveAuth
@@ -25,7 +26,7 @@ def _token_response(access: str = "dive-access", expires_in: int = 86399) -> dic
 
 # Helper: run a sync function as if it were submitted to a thread pool, for tests.
 def _run_sync(fn, *args, **kwargs):
-    fut = asyncio.get_event_loop().create_future()
+    fut = asyncio.get_running_loop().create_future()
     try:
         fut.set_result(fn(*args, **kwargs))
     except Exception as e:
@@ -128,3 +129,37 @@ async def test_serialize_round_trip():
     assert data["profile_id"] == 106627261
     assert data["profile_display_name"] == "Rob"
     assert data["session_path"] == "/tmp/garmin_dive/106627261.json"
+
+
+async def test_refresh_raises_runtime_error_when_no_refresh_token():
+    """If the auth has no Dive refresh token, _refresh raises rather than silently failing."""
+    auth = GarminDiveAuth(ha_auth=MagicMock(), api=MagicMock())
+    auth._dive_access_token = None
+    auth._dive_refresh_token = None
+    auth._dive_expires_at = 0
+
+    with pytest.raises(RuntimeError, match="reauth required"):
+        await auth.get_dive_token()
+
+
+async def test_refresh_updates_expires_at():
+    """A successful refresh advances _dive_expires_at by the new expires_in."""
+    api = MagicMock()
+    api.refresh_dive_token = AsyncMock(
+        return_value={
+            "access_token": "rotated",
+            "refresh_token": "new-rt",
+            "expires_in": 3600,
+        }
+    )
+    auth = GarminDiveAuth(ha_auth=MagicMock(), api=api)
+    auth._dive_access_token = "old"
+    auth._dive_refresh_token = "rt"
+    auth._dive_expires_at = time.time() + 60  # within skew
+
+    before = time.time()
+    await auth.get_dive_token()
+    # _dive_expires_at should be around (before + 3600), give or take 5s.
+    assert auth._dive_expires_at >= before + 3600 - 5
+    assert auth._dive_expires_at <= before + 3600 + 5
+    assert auth._dive_refresh_token == "new-rt"

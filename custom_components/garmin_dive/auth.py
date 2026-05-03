@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any
@@ -31,6 +32,7 @@ class GarminDiveAuth:
         self._profile_id: int | None = None
         self._profile_display_name: str | None = None
         self._session_path: str | None = None
+        self._refresh_lock: asyncio.Lock | None = None
 
     # --- Login / MFA --------------------------------------------------------
 
@@ -73,16 +75,29 @@ class GarminDiveAuth:
         return await self._refresh()
 
     async def _refresh(self) -> str:
-        if not self._dive_refresh_token:
-            raise RuntimeError("No Dive refresh token available; reauth required")
-        token_resp = await self._api.refresh_dive_token(refresh_token=self._dive_refresh_token)
-        self._apply_dive_token(token_resp)
-        assert self._dive_access_token is not None
-        return self._dive_access_token
+        if self._refresh_lock is None:
+            self._refresh_lock = asyncio.Lock()
+        async with self._refresh_lock:
+            # Re-check inside the lock: a concurrent caller may have just refreshed.
+            if (
+                self._dive_access_token
+                and self._dive_expires_at - time.time() > TOKEN_REFRESH_SKEW_SECONDS
+            ):
+                return self._dive_access_token
+            if not self._dive_refresh_token:
+                raise RuntimeError("No Dive refresh token available; reauth required")
+            token_resp = await self._api.refresh_dive_token(refresh_token=self._dive_refresh_token)
+            self._apply_dive_token(token_resp)
+            assert self._dive_access_token is not None
+            return self._dive_access_token
 
     def _apply_dive_token(self, resp: dict[str, Any]) -> None:
         self._dive_access_token = resp["access_token"]
-        self._dive_refresh_token = resp["refresh_token"]
+        # Per RFC 6749 §6 the refresh response MAY omit refresh_token (no rotation).
+        # Preserve the existing one in that case.
+        new_refresh = resp.get("refresh_token")
+        if new_refresh:
+            self._dive_refresh_token = new_refresh
         self._dive_expires_at = time.time() + int(resp["expires_in"])
 
     # --- Persistence --------------------------------------------------------

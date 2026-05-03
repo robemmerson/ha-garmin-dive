@@ -1,0 +1,21 @@
+{
+  "gearId": 247811,
+  "name": "Underwater iPhone Light",
+  "type": "LIGHT",
+  "brand": "LetonPower",
+  "model": "Sealion L24",
+  "dateOfFirstUse": "2024-04-06",
+  "purchasePrice": 158.0,
+  "purchaseCurrency": "GBP",
+  "purchasedFrom": "Amazon",
+  "purchaseDate": "2024-03-23",
+  "status": "ACTIVE",
+  "creationTs": "2024-04-07T07:51:58Z",
+  "lastModifiedTs": "2024-04-07T07:52:16Z",
+  "stats": { "numAssociatedDives": 17, "totalAssociatedDiveTime": 51103.05 },
+  "gearField": {
+    "fields": { "type": "PHOTOGRAPHY", "bulb": "HID", "rechargeable": true, "lumenOutput": 12000 },
+    "type": "LIGHT"
+  },
+  "media": { "images": [] }
+}

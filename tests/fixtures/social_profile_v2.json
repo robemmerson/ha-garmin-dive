@@ -1,0 +1,16 @@
+{
+  "id": 400994503,
+  "garminGUID": "00000000-0000-0000-0000-000000000000",
+  "profileId": 106627261,
+  "displayName": "test-display-name",
+  "fullName": "Test User",
+  "userName": "test@example.invalid",
+  "profileImageType": "UPLOADED_PHOTO",
+  "profileImageUrls": {},
+  "userRoles": [
+    "SCOPE_CONNECT_READ",
+    "SCOPE_DIVE_API_READ",
+    "SCOPE_DIVE_API_WRITE",
+    "ROLE_DIVE_USER"
+  ]
+}

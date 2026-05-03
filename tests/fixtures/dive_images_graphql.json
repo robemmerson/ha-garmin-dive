@@ -1,0 +1,47 @@
+{
+  "data": {
+    "diveImages": {
+      "__typename": "ImageList",
+      "items": [
+        {
+          "__typename": "Image",
+          "imageUUID": "3730581e-c80e-4c19-8513-cd403e1c72a5",
+          "inappropriateReviewStatus": "PASSED_BY_ALGORITHM",
+          "timezone": "Africa/Cairo",
+          "eventDate": "2025-08-26T09:01:37+03:00",
+          "associatedEntityType": "SINGLE_GAS",
+          "associatedEntityName": null,
+          "entityReferenceId": "23285230",
+          "owner": {
+            "__typename": "PlayerProfile",
+            "profileName": "test-display-name",
+            "playerProfileId": 106627261
+          },
+          "versionedUrls": [
+            {
+              "__typename": "ExpiringURL",
+              "key": "3730581e-smth.jpeg",
+              "url": "https://example.invalid/3730581e-smth.jpeg?sig=test",
+              "urlExpiration": "2026-05-04T01:54:47Z",
+              "version": "SMALL_THUMBNAIL"
+            },
+            {
+              "__typename": "ExpiringURL",
+              "key": "3730581e-mdfd.jpeg",
+              "url": "https://example.invalid/3730581e-mdfd.jpeg?sig=test",
+              "urlExpiration": "2026-05-04T01:54:47Z",
+              "version": "MEDIUM_FEED"
+            },
+            {
+              "__typename": "ExpiringURL",
+              "key": "3730581e-larg.jpeg",
+              "url": "https://example.invalid/3730581e-larg.jpeg?sig=test",
+              "urlExpiration": "2026-05-04T01:54:47Z",
+              "version": "LARGE"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

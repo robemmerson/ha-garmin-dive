@@ -1,0 +1,58 @@
+[project]
+name = "ha-garmin-dive"
+version = "0.1.0"
+description = "Home Assistant integration for Garmin Dive activity and gear data"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.13"
+authors = [{ name = "Rob Emmerson" }]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+extend-exclude = ["tests/fixtures"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",      # pycodestyle + pyflakes
+    "I",                # isort
+    "B",                # bugbear
+    "UP",               # pyupgrade
+    "ASYNC",            # async checks
+    "RUF",              # ruff-specific
+    "SIM",              # simplify
+    "TID",              # tidy imports
+    "PL",               # pylint
+]
+ignore = [
+    "PLR0913",  # too many args (HA entities legitimately take many)
+    "PLR2004",  # magic numbers
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["PLR2004", "S101"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_return_any = false
+warn_unused_configs = true
+disallow_any_generics = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+files = ["custom_components/garmin_dive"]
+
+[[tool.mypy.overrides]]
+module = ["ha_garmin.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-ra --strict-markers"
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:homeassistant.*",
+]

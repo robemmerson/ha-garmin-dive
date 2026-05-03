@@ -1,0 +1,13 @@
+homeassistant>=2026.1.0
+pytest>=8.0
+pytest-asyncio>=0.23
+pytest-homeassistant-custom-component>=0.13,<0.13.326
+pytest-cov>=5.0
+syrupy>=4.6
+aresponses>=3.0
+ruff>=0.7
+mypy>=1.10
+codespell>=2.3
+pre-commit>=3.7
+ha-garmin>=0.1.19,<0.2
+freezegun>=1.4

@@ -1,0 +1,18 @@
+{
+  "gearId": 159147,
+  "name": "Descent T1",
+  "type": "TRANSMITTER",
+  "desc": "Descent T1",
+  "brand": "Garmin",
+  "model": "Descent T1",
+  "serialNumber": "09144",
+  "antChannelId": 356952664,
+  "dateOfFirstUse": "2022-01-01",
+  "purchasedFrom": "Test Dive Shop",
+  "purchaseDate": "2022-01-01",
+  "status": "ACTIVE",
+  "creationTs": "2022-01-01T00:00:00Z",
+  "lastModifiedTs": "2023-01-01T00:00:00Z",
+  "stats": { "numAssociatedDives": 36, "totalAssociatedDiveTime": 108558.86 },
+  "media": { "images": [] }
+}

@@ -1,0 +1,30 @@
+{
+  "gearId": 141548,
+  "name": "Atomic B2 Regulator",
+  "type": "REGULATOR",
+  "brand": "Atomic Aquatics",
+  "model": "B2",
+  "serialNumber": "1CA0062",
+  "dueIndicator": "NOT_DUE",
+  "lastServiceDate": "2025-01-01",
+  "serviceIntervalDays": 730,
+  "lastServicedBy": "Test Dive Shop",
+  "nextServiceDate": "2027-01-01",
+  "nextServiceDueIndicator": "NOT_DUE",
+  "dateOfFirstUse": "2023-01-01",
+  "purchasePrice": 872.4,
+  "purchaseCurrency": "GBP",
+  "purchasedFrom": "Test Dive Shop",
+  "purchaseDate": "2022-12-01",
+  "surfaceWeight": 1.1,
+  "surfaceWeightUnit": "KILOGRAM",
+  "status": "ACTIVE",
+  "creationTs": "2023-01-01T00:00:00Z",
+  "lastModifiedTs": "2025-01-02T00:00:00Z",
+  "stats": { "numAssociatedDives": 31, "totalAssociatedDiveTime": 95690.84 },
+  "gearField": {
+    "fields": { "type": "PISTON", "connectorType": "DIN" },
+    "type": "REGULATOR"
+  },
+  "media": { "images": [] }
+}

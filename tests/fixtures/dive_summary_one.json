@@ -1,0 +1,36 @@
+{
+  "totalCount": 68,
+  "pageSize": 1,
+  "pageNumber": 0,
+  "diveActivities": [
+    {
+      "id": 23285230,
+      "connectActivityId": 20180546488,
+      "name": "Test Site Alpha",
+      "diveType": "SINGLE_GAS",
+      "number": 68,
+      "excludedFromDLN": false,
+      "startTime": "2025-06-15T10:00:00+00:00",
+      "timezone": "UTC",
+      "totalTime": 2807.98,
+      "maxDepth": 26.373,
+      "bottomTime": 2747.59,
+      "diveTags": ["RECREATIONAL", "TRAINING_CERTIFICATION", "WARM_WATER"],
+      "activitySource": "GARMIN_DEVICE",
+      "gases": [
+        {
+          "gasStatus": "BOTTOM_GAS",
+          "gasType": "AIR",
+          "percentOxygen": 21,
+          "percentHelium": 0,
+          "gasMode": "OPEN_CIRCUIT"
+        }
+      ],
+      "surfaceInterval": 2743,
+      "elasticsearchScore": -1.0,
+      "contentVisibility": "PRIVATE",
+      "connectPrivacy": { "typeId": 3, "typeKey": "subscribers" },
+      "hasTSBData": false
+    }
+  ]
+}

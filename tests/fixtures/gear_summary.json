@@ -1,0 +1,54 @@
+[
+  {
+    "gearId": 463947,
+    "name": "Deep Diver",
+    "type": "CERTIFICATION",
+    "dateOfFirstUse": "2025-01-01",
+    "status": "ACTIVE",
+    "creationTs": "2025-01-01T00:00:00Z",
+    "stats": { "numAssociatedDives": 3, "totalAssociatedDiveTime": 8794.561 }
+  },
+  {
+    "gearId": 247811,
+    "name": "Underwater iPhone Light",
+    "type": "LIGHT",
+    "dateOfFirstUse": "2024-01-01",
+    "status": "ACTIVE",
+    "creationTs": "2024-01-01T00:00:00Z",
+    "image": {
+      "imageUUID": "315aa699-ea9b-4323-8177-3d8a77b28e24",
+      "inappropriateStatus": "PASSED_BY_ALGORITHM",
+      "versions": [
+        {
+          "version": "SMALL_THUMBNAIL",
+          "key": "315aa699-smth.jpeg",
+          "url": "https://example.invalid/315aa699-smth.jpeg?sig=test",
+          "expiresAt": "2026-05-04T02:02:32Z"
+        },
+        {
+          "version": "MEDIUM_FEED",
+          "key": "315aa699-mdfd.jpeg",
+          "url": "https://example.invalid/315aa699-mdfd.jpeg?sig=test",
+          "expiresAt": "2026-05-04T02:02:32Z"
+        },
+        {
+          "version": "LARGE",
+          "key": "315aa699-larg.jpeg",
+          "url": "https://example.invalid/315aa699-larg.jpeg?sig=test",
+          "expiresAt": "2026-05-04T02:02:32Z"
+        }
+      ]
+    },
+    "stats": { "numAssociatedDives": 17, "totalAssociatedDiveTime": 51103.05 }
+  },
+  {
+    "gearId": 141548,
+    "name": "Atomic B2 Regulator",
+    "type": "REGULATOR",
+    "dateOfFirstUse": "2023-01-01",
+    "status": "ACTIVE",
+    "creationTs": "2023-01-01T00:00:00Z",
+    "lastModifiedTs": "2025-01-02T00:00:00Z",
+    "stats": { "numAssociatedDives": 31, "totalAssociatedDiveTime": 95690.84 }
+  }
+]

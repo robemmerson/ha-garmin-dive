@@ -4,9 +4,9 @@
 
 **Goal:** Build a HACS-installable Home Assistant integration that surfaces Garmin Dive activity + dive-gear data for one-or-more Garmin accounts, including a yearly dive timeline and locally-cached photos.
 
-**Architecture:** Per Garmin account, a single `DataUpdateCoordinator` polls the Dive REST API + a GraphQL photo operation against `gcs.garmin.com`. Auth via `garth` (SSO + MFA-aware) + a `DIVE_MOBILE_IOS_DI` audience exchange. Photos cached to `config/www/garmin_dive/`. Each dive computer and gear item is registered as an HA sub-device under the account device.
+**Architecture:** Per Garmin account, a single `DataUpdateCoordinator` polls the Dive REST API + a GraphQL photo operation against `gcs.garmin.com`. Auth via `ha-garmin` (SSO + MFA-aware via `curl_cffi` TLS impersonation) + a `DIVE_MOBILE_IOS_DI` audience exchange. Photos cached to `config/www/garmin_dive/`. Each dive computer and gear item is registered as an HA sub-device under the account device.
 
-**Tech Stack:** Python 3.12, Home Assistant 2026.1+, `garth>=0.5`, `aiohttp` (HA-provided), `pytest-homeassistant-custom-component`, `ruff`, `mypy`, `syrupy` (snapshots), GitHub Actions, HACS.
+**Tech Stack:** Python 3.13+, Home Assistant 2026.1+, `ha-garmin>=0.1.19` (replaces the deprecated `garth`), `aiohttp` (HA-provided), `pytest-homeassistant-custom-component`, `ruff`, `mypy`, `syrupy` (snapshots), GitHub Actions, HACS.
 
 **Spec:** [`docs/superpowers/specs/2026-05-03-ha-garmin-dive-design.md`](../specs/2026-05-03-ha-garmin-dive-design.md)
 
@@ -26,7 +26,7 @@
   - Entity types: <https://developers.home-assistant.io/docs/core/entity>
   - HACS publishing: <https://www.hacs.xyz/docs/publish/integration>
   - hassfest: <https://developers.home-assistant.io/docs/creating_integration_manifest>
-  - garth library: <https://github.com/matin/garth>
+  - ha-garmin library: <https://pypi.org/project/ha-garmin/> (the active replacement for the deprecated [garth](https://github.com/matin/garth/discussions/222))
 - **Working directory:** `/Users/rob.emmerson/git/ha-garmin-dive` (already initialised as a git repo with `main` branch).
 
 ---
@@ -154,7 +154,7 @@ warn_unused_ignores = true
 files = ["custom_components/garmin_dive"]
 
 [[tool.mypy.overrides]]
-module = ["garth.*"]
+module = ["ha_garmin.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
@@ -181,7 +181,7 @@ ruff>=0.7
 mypy>=1.10
 codespell>=2.3
 pre-commit>=3.7
-garth>=0.5.0
+ha-garmin>=0.1.19
 ```
 
 - [ ] **Step 5: Commit**
@@ -228,7 +228,7 @@ Designed to coexist with the standard HACS Garmin Connect integration — this o
 - Per-gear-item sub-devices with service-status + lifetime-usage sensors
 - `binary_sensor.service_due` flips on when any gear is due/overdue
 - Photos cached locally so dashboards never hit expiring S3 URLs
-- MFA-aware login via `garth`
+- MFA-aware login via `ha-garmin`
 - Multi-account ready
 
 ## Configuration
@@ -333,7 +333,7 @@ git commit -m "docs: add HACS metadata and README skeleton"
   "issue_tracker": "https://github.com/robemmerson/ha-garmin-dive/issues",
   "iot_class": "cloud_polling",
   "integration_type": "hub",
-  "requirements": ["garth>=0.5.0"]
+  "requirements": ["ha-garmin>=0.1.19"]
 }
 ```
 
@@ -552,12 +552,12 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     {
       "id": 23285230,
       "connectActivityId": 20180546488,
-      "name": "Elphinstone (South side)",
+      "name": "Test Site Alpha",
       "diveType": "SINGLE_GAS",
       "number": 68,
       "excludedFromDLN": false,
-      "startTime": "2025-08-26T09:01:37+03:00",
-      "timezone": "Africa/Cairo",
+      "startTime": "2025-06-15T10:00:00+00:00",
+      "timezone": "UTC",
       "totalTime": 2807.98,
       "maxDepth": 26.373,
       "bottomTime": 2747.59,
@@ -593,12 +593,12 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     {
       "id": 23285230,
       "connectActivityId": 20180546488,
-      "name": "Elphinstone (South side)",
+      "name": "Test Site Alpha",
       "diveType": "SINGLE_GAS",
       "number": 68,
       "excludedFromDLN": false,
-      "startTime": "2025-08-26T09:01:37+03:00",
-      "timezone": "Africa/Cairo",
+      "startTime": "2025-06-15T10:00:00+00:00",
+      "timezone": "UTC",
       "totalTime": 2807.98,
       "maxDepth": 26.373,
       "bottomTime": 2747.59,
@@ -619,13 +619,13 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     {
       "id": 23285231,
       "connectActivityId": 20180546492,
-      "name": "Elphinstone (North side)",
+      "name": "Test Site Beta",
       "diveType": "SINGLE_GAS",
-      "entryLoc": { "latitude": 25.31160389073193, "longitude": 34.85996866598725 },
+      "entryLoc": { "latitude": 0.0, "longitude": 0.0 },
       "number": 67,
       "excludedFromDLN": false,
-      "startTime": "2025-08-26T07:33:14+03:00",
-      "timezone": "Africa/Cairo",
+      "startTime": "2025-06-15T08:30:00+00:00",
+      "timezone": "UTC",
       "totalTime": 2619.22,
       "maxDepth": 33.492,
       "bottomTime": 2558.17,
@@ -646,13 +646,13 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     {
       "id": 23261609,
       "connectActivityId": 20170276106,
-      "name": "Dolphin House Dive 2",
+      "name": "Test Site Gamma",
       "diveType": "SINGLE_GAS",
-      "entryLoc": { "latitude": 24.985758243128657, "longitude": 34.99630426056683 },
+      "entryLoc": { "latitude": 0.0, "longitude": 0.0 },
       "number": 66,
       "excludedFromDLN": false,
-      "startTime": "2025-08-25T11:47:45+03:00",
-      "timezone": "Africa/Cairo",
+      "startTime": "2025-06-14T11:30:00+00:00",
+      "timezone": "UTC",
       "totalTime": 3005.39,
       "maxDepth": 15.363,
       "bottomTime": 2944.37,
@@ -745,18 +745,18 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     "gearId": 463947,
     "name": "Deep Diver",
     "type": "CERTIFICATION",
-    "dateOfFirstUse": "2025-08-21",
+    "dateOfFirstUse": "2025-01-01",
     "status": "ACTIVE",
-    "creationTs": "2025-08-22T10:45:48Z",
+    "creationTs": "2025-01-01T00:00:00Z",
     "stats": { "numAssociatedDives": 3, "totalAssociatedDiveTime": 8794.561 }
   },
   {
     "gearId": 247811,
     "name": "Underwater iPhone Light",
     "type": "LIGHT",
-    "dateOfFirstUse": "2024-04-06",
+    "dateOfFirstUse": "2024-01-01",
     "status": "ACTIVE",
-    "creationTs": "2024-04-07T07:51:58Z",
+    "creationTs": "2024-01-01T00:00:00Z",
     "image": {
       "imageUUID": "315aa699-ea9b-4323-8177-3d8a77b28e24",
       "inappropriateStatus": "PASSED_BY_ALGORITHM",
@@ -787,10 +787,10 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     "gearId": 141548,
     "name": "Atomic B2 Regulator",
     "type": "REGULATOR",
-    "dateOfFirstUse": "2023-04-05",
+    "dateOfFirstUse": "2023-01-01",
     "status": "ACTIVE",
-    "creationTs": "2023-01-08T20:57:36Z",
-    "lastModifiedTs": "2025-04-06T10:43:38Z",
+    "creationTs": "2023-01-01T00:00:00Z",
+    "lastModifiedTs": "2025-01-02T00:00:00Z",
     "stats": { "numAssociatedDives": 31, "totalAssociatedDiveTime": 95690.84 }
   }
 ]
@@ -807,21 +807,21 @@ def auto_enable_custom_integrations(enable_custom_integrations):
   "model": "B2",
   "serialNumber": "1CA0062",
   "dueIndicator": "NOT_DUE",
-  "lastServiceDate": "2025-04-04",
+  "lastServiceDate": "2025-01-01",
   "serviceIntervalDays": 730,
-  "lastServicedBy": "Mike's Dive Store",
-  "nextServiceDate": "2027-04-04",
+  "lastServicedBy": "Test Dive Shop",
+  "nextServiceDate": "2027-01-01",
   "nextServiceDueIndicator": "NOT_DUE",
-  "dateOfFirstUse": "2023-04-05",
+  "dateOfFirstUse": "2023-01-01",
   "purchasePrice": 872.4,
   "purchaseCurrency": "GBP",
-  "purchasedFrom": "Mike's Dive Store",
-  "purchaseDate": "2022-12-28",
+  "purchasedFrom": "Test Dive Shop",
+  "purchaseDate": "2022-12-01",
   "surfaceWeight": 1.1,
   "surfaceWeightUnit": "KILOGRAM",
   "status": "ACTIVE",
-  "creationTs": "2023-01-08T20:57:36Z",
-  "lastModifiedTs": "2025-04-06T10:43:38Z",
+  "creationTs": "2023-01-01T00:00:00Z",
+  "lastModifiedTs": "2025-01-02T00:00:00Z",
   "stats": { "numAssociatedDives": 31, "totalAssociatedDiveTime": 95690.84 },
   "gearField": {
     "fields": { "type": "PISTON", "connectorType": "DIN" },
@@ -840,14 +840,14 @@ def auto_enable_custom_integrations(enable_custom_integrations):
   "type": "LIGHT",
   "brand": "LetonPower",
   "model": "Sealion L24",
-  "dateOfFirstUse": "2024-04-06",
+  "dateOfFirstUse": "2024-01-01",
   "purchasePrice": 158.0,
   "purchaseCurrency": "GBP",
   "purchasedFrom": "Amazon",
-  "purchaseDate": "2024-03-23",
+  "purchaseDate": "2024-01-01",
   "status": "ACTIVE",
-  "creationTs": "2024-04-07T07:51:58Z",
-  "lastModifiedTs": "2024-04-07T07:52:16Z",
+  "creationTs": "2024-01-01T00:00:00Z",
+  "lastModifiedTs": "2024-01-02T00:00:00Z",
   "stats": { "numAssociatedDives": 17, "totalAssociatedDiveTime": 51103.05 },
   "gearField": {
     "fields": { "type": "PHOTOGRAPHY", "bulb": "HID", "rechargeable": true, "lumenOutput": 12000 },
@@ -869,12 +869,12 @@ def auto_enable_custom_integrations(enable_custom_integrations):
   "model": "Descent T1",
   "serialNumber": "09144",
   "antChannelId": 356952664,
-  "dateOfFirstUse": "2022-08-20",
-  "purchasedFrom": "Mike's Dive Store",
-  "purchaseDate": "2022-07-29",
+  "dateOfFirstUse": "2022-01-01",
+  "purchasedFrom": "Test Dive Shop",
+  "purchaseDate": "2022-01-01",
   "status": "ACTIVE",
-  "creationTs": "2023-04-06T01:20:01Z",
-  "lastModifiedTs": "2023-04-19T03:24:14Z",
+  "creationTs": "2022-01-01T00:00:00Z",
+  "lastModifiedTs": "2023-01-01T00:00:00Z",
   "stats": { "numAssociatedDives": 36, "totalAssociatedDiveTime": 108558.86 },
   "media": { "images": [] }
 }
@@ -891,19 +891,19 @@ def auto_enable_custom_integrations(enable_custom_integrations):
   "model": "Carbon HD Hose",
   "size": "15cm/6in",
   "dueIndicator": "NOT_DUE",
-  "lastServiceDate": "2025-04-04",
+  "lastServiceDate": "2025-01-01",
   "serviceIntervalDays": 730,
-  "lastServicedBy": "Mike's Dive Store",
-  "nextServiceDate": "2027-04-04",
+  "lastServicedBy": "Test Dive Shop",
+  "nextServiceDate": "2027-01-01",
   "nextServiceDueIndicator": "NOT_DUE",
-  "dateOfFirstUse": "2022-08-02",
+  "dateOfFirstUse": "2022-01-01",
   "purchasePrice": 28.8,
   "purchaseCurrency": "GBP",
-  "purchasedFrom": "Aquanauts Scuba Kingston",
-  "purchaseDate": "2022-08-02",
+  "purchasedFrom": "Test Dive Shop",
+  "purchaseDate": "2022-01-01",
   "status": "ACTIVE",
-  "creationTs": "2022-08-03T11:41:32Z",
-  "lastModifiedTs": "2025-04-06T10:44:07Z",
+  "creationTs": "2022-01-01T00:00:00Z",
+  "lastModifiedTs": "2025-01-02T00:00:00Z",
   "stats": { "numAssociatedDives": 31, "totalAssociatedDiveTime": 95690.84 },
   "media": { "images": [] }
 }
@@ -942,8 +942,8 @@ def auto_enable_custom_integrations(enable_custom_integrations):
           "__typename": "Image",
           "imageUUID": "3730581e-c80e-4c19-8513-cd403e1c72a5",
           "inappropriateReviewStatus": "PASSED_BY_ALGORITHM",
-          "timezone": "Africa/Cairo",
-          "eventDate": "2025-08-26T09:01:37+03:00",
+          "timezone": "UTC",
+          "eventDate": "2025-06-15T10:00:00+00:00",
           "associatedEntityType": "SINGLE_GAS",
           "associatedEntityName": null,
           "entityReferenceId": "23285230",
@@ -1044,7 +1044,7 @@ async def test_get_dive_summary_returns_decoded_json(
     )
     result = await client.get_dive_summary(page=0, results_per_page=1)
     assert result["totalCount"] == 68
-    assert result["diveActivities"][0]["name"] == "Elphinstone (South side)"
+    assert result["diveActivities"][0]["name"] == "Test Site Alpha"
 
 
 async def test_get_dive_summary_sends_bearer_and_app_headers(
@@ -1224,7 +1224,7 @@ async def test_get_gear_detail(
     )
     detail = await client.get_gear_detail(gear_id=141548, current_user_date="2026-05-03")
     assert detail["brand"] == "Atomic Aquatics"
-    assert detail["nextServiceDate"] == "2027-04-04"
+    assert detail["nextServiceDate"] == "2027-01-01"
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -1420,7 +1420,7 @@ git commit -m "feat(api): add GraphQL POST helper and dive-photos wrapper"
 - Modify: `custom_components/garmin_dive/api.py`
 - Modify: `tests/test_api.py`
 
-The Dive bearer is obtained by POSTing `audience=DIVE_MOBILE_IOS_DI` to `connectapi.garmin.com/oauth-service/oauth/exchange/user/2.0` using the **Connect** bearer (which `garth` provides). We add this method to the API client because it's an HTTP call with a bearer; the auth module wires it.
+The Dive bearer is obtained by POSTing `audience=DIVE_MOBILE_IOS_DI` to `connectapi.garmin.com/oauth-service/oauth/exchange/user/2.0` using the **Connect** bearer (which `ha-garmin` provides as `auth.di_token`). We add this method to the API client because it's an HTTP call with a bearer; the auth module wires it.
 
 - [ ] **Step 1: Append failing tests**
 
@@ -1620,13 +1620,26 @@ git commit -m "feat(api): audience exchange, social profile, and dive-token refr
 - Create: `custom_components/garmin_dive/auth.py`
 - Create: `tests/test_auth.py`
 
-`GarminDiveAuth` owns:
-- the `garth.Client` (login + MFA + Connect tokens)
-- the cached Dive access token + refresh token + expiry
-- `get_dive_token()` (refresh-on-skew)
-- `serialize()` / `from_entry_data()` for HA config-entry persistence
+`GarminDiveAuth` wraps the upstream Garmin SSO library and layers our DIVE audience exchange on top.
 
-It deliberately does no HTTP itself — it composes `GarminDiveClient` for the Dive token exchange/refresh calls. Garth interactions are wrapped in executor jobs because the library is synchronous.
+**Library choice — `ha-garmin` (not garth).** The de facto Python SSO library for Garmin in 2026 is [`ha-garmin`](https://pypi.org/project/ha-garmin/) (used by `cyberjunky/home-assistant-garmin_connect`). `garth` was the previous standard but is **deprecated** as of 2026 — it cannot complete new logins because of Garmin's TLS-fingerprinting + Cloudflare changes. `ha-garmin` uses `curl_cffi` to impersonate a browser TLS fingerprint and re-implements the SSO + DI-OAuth flow.
+
+`ha-garmin`'s public API:
+- `GarminAuth()` — sync constructor (`is_cn: bool = False` for China region).
+- `auth.login(email, password) -> AuthResult` — sync, blocks on network. Raises `GarminMFARequired` if 2FA prompt is required.
+- `auth.complete_mfa(mfa_code) -> AuthResult` — sync, completes the partial login.
+- `auth.di_token` — the Connect-API DI bearer (string).
+- `auth.is_authenticated` — bool.
+- `auth.save_session(path)` / `auth.load_session(path) -> bool` — JSON token-store persistence.
+- `auth.refresh_session() -> bool` — refreshes the DI token using the saved refresh token.
+
+Our `GarminDiveAuth` owns:
+- the `ha_garmin.GarminAuth` instance (login + MFA + Connect tokens + their persistence).
+- our own DIVE-scoped access/refresh token pair (separately managed because we audience-exchange to `DIVE_MOBILE_IOS_DI`).
+- `get_dive_token()` (refresh-on-skew using our DIVE refresh token directly against `diauth.garmin.com`).
+- `serialize()` / `from_entry_data()` for HA config-entry persistence.
+
+It deliberately does no HTTP itself — it composes `GarminDiveClient` for the audience-exchange and DIVE-token-refresh HTTP calls. `ha-garmin` calls are wrapped in executor jobs because the library is synchronous.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1654,30 +1667,66 @@ def _token_response(access: str = "dive-access", expires_in: int = 86399) -> dic
     }
 
 
-async def test_login_calls_garth_then_exchanges_dive_audience(monkeypatch):
-    fake_garth = MagicMock()
-    fake_garth.login = MagicMock()
-    fake_garth.oauth1_token = "g-oauth1"
-    fake_garth.oauth2_token = MagicMock(access_token="connect-access")
+async def test_login_calls_ha_garmin_then_exchanges_dive_audience():
+    """Successful login (no MFA): calls ha_garmin.login, exchanges for Dive audience."""
+    fake_ha = MagicMock()
+    fake_ha.login = MagicMock(return_value=MagicMock())  # AuthResult, ignored
+    fake_ha.di_token = "connect-access"
 
     api = MagicMock()
     api.exchange_dive_audience = AsyncMock(return_value=_token_response())
-    api.get_social_profile = AsyncMock(return_value={"profileId": 106627261, "displayName": "Rob"})
+    api.get_social_profile = AsyncMock(
+        return_value={"profileId": 106627261, "displayName": "Rob"}
+    )
 
-    auth = GarminDiveAuth(garth_client=fake_garth, api=api)
-    profile = await auth.login("test@example.invalid", "secret")
+    auth = GarminDiveAuth(ha_auth=fake_ha, api=api)
+    profile = await auth.login(
+        hass=MagicMock(async_add_executor_job=lambda fn, *a, **kw: _run_sync(fn, *a, **kw)),
+        email="test@example.invalid",
+        password="secret",
+    )
 
-    fake_garth.login.assert_called_once()
+    fake_ha.login.assert_called_once_with("test@example.invalid", "secret")
     api.exchange_dive_audience.assert_awaited_once_with(connect_bearer="connect-access")
     assert profile["profileId"] == 106627261
+    assert auth.profile_id == 106627261
+    assert auth.profile_display_name == "Rob"
     assert (await auth.get_dive_token()) == "dive-access"
 
 
-async def test_get_dive_token_refreshes_when_within_skew(monkeypatch):
+async def test_login_handles_mfa_via_provider():
+    """When ha_garmin raises GarminMFARequired, login awaits the mfa_provider."""
+    from ha_garmin import GarminMFARequired
+
+    fake_ha = MagicMock()
+    fake_ha.login = MagicMock(side_effect=GarminMFARequired("MFA required"))
+    fake_ha.complete_mfa = MagicMock(return_value=MagicMock())
+    fake_ha.di_token = "connect-access"
+
+    api = MagicMock()
+    api.exchange_dive_audience = AsyncMock(return_value=_token_response())
+    api.get_social_profile = AsyncMock(return_value={"profileId": 1, "displayName": "X"})
+
+    async def mfa_provider() -> str:
+        return "123456"
+
+    auth = GarminDiveAuth(ha_auth=fake_ha, api=api)
+    await auth.login(
+        hass=MagicMock(async_add_executor_job=lambda fn, *a, **kw: _run_sync(fn, *a, **kw)),
+        email="x@example.invalid",
+        password="secret",
+        mfa_provider=mfa_provider,
+    )
+
+    fake_ha.login.assert_called_once()
+    fake_ha.complete_mfa.assert_called_once_with("123456")
+
+
+async def test_get_dive_token_refreshes_when_within_skew():
     api = MagicMock()
     api.refresh_dive_token = AsyncMock(return_value=_token_response(access="rotated"))
 
-    auth = GarminDiveAuth(garth_client=MagicMock(), api=api)
+    auth = GarminDiveAuth(ha_auth=MagicMock(), api=api)
     auth._dive_access_token = "expiring"
     auth._dive_refresh_token = "rt"
     auth._dive_expires_at = time.time() + 60  # within 5-min skew
@@ -1691,7 +1740,7 @@ async def test_get_dive_token_caches_when_fresh():
     api = MagicMock()
     api.refresh_dive_token = AsyncMock()
 
-    auth = GarminDiveAuth(garth_client=MagicMock(), api=api)
+    auth = GarminDiveAuth(ha_auth=MagicMock(), api=api)
     auth._dive_access_token = "fresh"
     auth._dive_refresh_token = "rt"
     auth._dive_expires_at = time.time() + 36000  # well above skew
@@ -1702,13 +1751,13 @@ async def test_get_dive_token_caches_when_fresh():
 
 
 async def test_serialize_round_trip():
-    auth = GarminDiveAuth(garth_client=MagicMock(), api=MagicMock())
+    auth = GarminDiveAuth(ha_auth=MagicMock(), api=MagicMock())
     auth._dive_access_token = "a"
     auth._dive_refresh_token = "r"
     auth._dive_expires_at = 1234567890
-    auth._garth_session_dump = {"oauth1_token": "...", "oauth2_token": "..."}
     auth._profile_id = 106627261
     auth._profile_display_name = "Rob"
+    auth._session_path = "/tmp/garmin_dive/106627261.json"
 
     data = auth.serialize()
     assert data["dive_access_token"] == "a"
@@ -1716,7 +1765,18 @@ async def test_serialize_round_trip():
     assert data["dive_expires_at"] == 1234567890
     assert data["profile_id"] == 106627261
     assert data["profile_display_name"] == "Rob"
-    assert data["garth_session"] == {"oauth1_token": "...", "oauth2_token": "..."}
+    assert data["session_path"] == "/tmp/garmin_dive/106627261.json"
+
+
+# Helper: run a sync function as if it were submitted to a thread pool, for tests.
+def _run_sync(fn, *args, **kwargs):
+    import asyncio
+    fut = asyncio.get_event_loop().create_future()
+    try:
+        fut.set_result(fn(*args, **kwargs))
+    except Exception as e:
+        fut.set_exception(e)
+    return fut
 ```
 
 - [ ] **Step 2: Run tests to confirm failures**
@@ -1727,56 +1787,67 @@ Expected: FAIL on missing module
 - [ ] **Step 3: Write `auth.py`**
 
 ```python
-"""Authentication for Garmin Dive: garth wrapper + DIVE audience exchange + token refresh."""
+"""Authentication for Garmin Dive: ha-garmin wrapper + DIVE audience exchange + token refresh."""
 from __future__ import annotations
 
 import time
+from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any
+
+from ha_garmin import GarminAuth, GarminMFARequired
 
 from .const import TOKEN_REFRESH_SKEW_SECONDS
 
 if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+
     from .api import GarminDiveClient
 
 
-class GarminDiveAuth:
-    """Holds a garth session + a separately-managed DIVE-scoped token pair."""
+MfaProvider = Callable[[], Awaitable[str]]
 
-    def __init__(self, *, garth_client: Any, api: GarminDiveClient) -> None:
-        self._garth = garth_client
+
+class GarminDiveAuth:
+    """Holds an ha-garmin session + a separately-managed DIVE-scoped token pair."""
+
+    def __init__(self, *, ha_auth: GarminAuth, api: GarminDiveClient) -> None:
+        self._ha = ha_auth
         self._api = api
         self._dive_access_token: str | None = None
         self._dive_refresh_token: str | None = None
         self._dive_expires_at: float = 0.0
-        self._garth_session_dump: dict[str, Any] | None = None
         self._profile_id: int | None = None
         self._profile_display_name: str | None = None
+        self._session_path: str | None = None
 
     # --- Login / MFA --------------------------------------------------------
 
     async def login(
         self,
+        *,
+        hass: HomeAssistant,
         email: str,
         password: str,
-        *,
-        prompt_mfa: Any | None = None,
+        mfa_provider: MfaProvider | None = None,
     ) -> dict[str, Any]:
-        """Run garth.login, exchange to a Dive-scoped token, and fetch the profile."""
-        # garth.Client.login is sync — caller (config flow) is responsible
-        # for running this in an executor. The unit test calls login directly
-        # on a Mock so this awaits an in-process function.
-        if prompt_mfa is None:
-            self._garth.login(email, password)
-        else:
-            self._garth.login(email, password, prompt_mfa=prompt_mfa)
+        """Run ha-garmin.login (in executor), handle MFA, exchange to DIVE scope, fetch profile."""
+        try:
+            await hass.async_add_executor_job(self._ha.login, email, password)
+        except GarminMFARequired:
+            if mfa_provider is None:
+                raise
+            code = await mfa_provider()
+            await hass.async_add_executor_job(self._ha.complete_mfa, code)
 
-        connect_token = self._extract_connect_access_token()
+        connect_token = self._ha.di_token  # Connect-API bearer
         token_resp = await self._api.exchange_dive_audience(connect_bearer=connect_token)
         self._apply_dive_token(token_resp)
 
         profile = await self._api.get_social_profile(connect_bearer=connect_token)
         self._profile_id = int(profile["profileId"])
-        self._profile_display_name = profile.get("displayName") or profile.get("fullName")
+        self._profile_display_name = (
+            profile.get("displayName") or profile.get("fullName")
+        )
 
         return profile
 
@@ -1784,7 +1855,10 @@ class GarminDiveAuth:
 
     async def get_dive_token(self) -> str:
         """Return a Dive bearer, refreshing if within the skew window."""
-        if self._dive_access_token and self._dive_expires_at - time.time() > TOKEN_REFRESH_SKEW_SECONDS:
+        if (
+            self._dive_access_token
+            and self._dive_expires_at - time.time() > TOKEN_REFRESH_SKEW_SECONDS
+        ):
             return self._dive_access_token
         return await self._refresh()
 
@@ -1803,13 +1877,26 @@ class GarminDiveAuth:
         self._dive_refresh_token = resp["refresh_token"]
         self._dive_expires_at = time.time() + int(resp["expires_in"])
 
-    def _extract_connect_access_token(self) -> str:
-        oauth2 = getattr(self._garth, "oauth2_token", None)
-        if oauth2 is None:
-            raise RuntimeError("garth client missing oauth2_token after login")
-        return getattr(oauth2, "access_token", oauth2)  # garth >=0.5 exposes .access_token
-
     # --- Persistence --------------------------------------------------------
+
+    async def save_ha_garmin_session(
+        self, hass: HomeAssistant, session_path: str
+    ) -> None:
+        """Persist the upstream ha-garmin session JSON to ``session_path``.
+
+        The path is stored on the auth so it survives serialize/deserialize.
+        """
+        await hass.async_add_executor_job(self._ha.save_session, session_path)
+        self._session_path = session_path
+
+    async def load_ha_garmin_session(
+        self, hass: HomeAssistant, session_path: str
+    ) -> bool:
+        """Load a previously saved ha-garmin session. Returns True on success."""
+        ok = await hass.async_add_executor_job(self._ha.load_session, session_path)
+        if ok:
+            self._session_path = session_path
+        return bool(ok)
 
     def serialize(self) -> dict[str, Any]:
         """Return a JSON-friendly dict suitable for storing in `entry.data`."""
@@ -1819,7 +1906,7 @@ class GarminDiveAuth:
             "dive_expires_at": self._dive_expires_at,
             "profile_id": self._profile_id,
             "profile_display_name": self._profile_display_name,
-            "garth_session": self._garth_session_dump,
+            "session_path": self._session_path,
         }
 
     @classmethod
@@ -1827,16 +1914,16 @@ class GarminDiveAuth:
         cls,
         data: dict[str, Any],
         *,
-        garth_client: Any,
+        ha_auth: GarminAuth,
         api: GarminDiveClient,
     ) -> GarminDiveAuth:
-        auth = cls(garth_client=garth_client, api=api)
+        auth = cls(ha_auth=ha_auth, api=api)
         auth._dive_access_token = data.get("dive_access_token")
         auth._dive_refresh_token = data.get("dive_refresh_token")
         auth._dive_expires_at = float(data.get("dive_expires_at") or 0)
         auth._profile_id = data.get("profile_id")
         auth._profile_display_name = data.get("profile_display_name")
-        auth._garth_session_dump = data.get("garth_session")
+        auth._session_path = data.get("session_path")
         return auth
 
     @property
@@ -1846,18 +1933,22 @@ class GarminDiveAuth:
     @property
     def profile_display_name(self) -> str | None:
         return self._profile_display_name
+
+    @property
+    def session_path(self) -> str | None:
+        return self._session_path
 ```
 
 - [ ] **Step 4: Run tests**
 
 Run: `pytest tests/test_auth.py -v`
-Expected: 4 passed
+Expected: 5 passed
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add custom_components/garmin_dive/auth.py tests/test_auth.py
-git commit -m "feat(auth): GarminDiveAuth with garth wrap, audience exchange, token refresh"
+git commit -m "feat(auth): GarminDiveAuth with ha-garmin wrap, audience exchange, token refresh"
 ```
 
 ---
@@ -2760,7 +2851,7 @@ async def test_coordinator_fires_new_dive_event(hass, fake_api, load_fixture):
     await hass.async_block_till_done()
 
     new_ids = [d["dive"]["id"] for d in fired]
-    assert 23285231 in new_ids  # the second Elphinstone
+    assert 23285231 in new_ids  # the new dive id appearing this cycle
     assert 23285230 not in new_ids
 ```
 
@@ -3062,7 +3153,7 @@ async def test_last_dive_state_and_attributes(hass, load_fixture):
     coord = make_fake_coordinator(hass=hass, data=data)
     sensor = LastDiveSensor(coord)
 
-    assert sensor.native_value == "Elphinstone (South side)"
+    assert sensor.native_value == "Test Site Alpha"
     attrs = sensor.extra_state_attributes
     assert attrs["max_depth"] == pytest.approx(26.373)
     assert attrs["bottom_time_minutes"] == pytest.approx(2747.59 / 60)
@@ -3581,8 +3672,8 @@ async def test_gear_days_until_service(hass, load_fixture):
     )
     coord = make_fake_coordinator(hass=hass, data=data)
     sensor = GearDaysUntilServiceSensor(coord, gear_id=141548)
-    # nextServiceDate=2027-04-04, today=2026-05-03 -> 336 days
-    assert sensor.native_value == 336
+    # nextServiceDate=2027-01-01, today=2026-05-03 -> 243 days
+    assert sensor.native_value == 243
 ```
 
 - [ ] **Step 2: Run to confirm failure**
@@ -4141,14 +4232,14 @@ async def test_calendar_event_for_each_dive(hass, load_fixture):
     coord = make_fake_coordinator(hass=hass, data=data)
     cal = GarminDiveCalendarEntity(coord)
 
-    start = datetime(2025, 8, 25, 0, 0, tzinfo=timezone.utc)
-    end = datetime(2025, 8, 27, 0, 0, tzinfo=timezone.utc)
+    start = datetime(2025, 6, 13, 0, 0, tzinfo=timezone.utc)
+    end = datetime(2025, 6, 16, 0, 0, tzinfo=timezone.utc)
     events = await cal.async_get_events(hass, start, end)
 
     assert len(events) == 3
     e = next(ev for ev in events if "South side" in ev.summary)
     assert "Max depth" in e.description
-    assert e.location == "Africa/Cairo"
+    assert e.location == "UTC"
 
 
 async def test_calendar_next_event(hass, load_fixture):
@@ -4355,7 +4446,7 @@ git commit -m "feat(button): manual refresh button"
 - Create: `custom_components/garmin_dive/config_flow.py`
 - Create: `tests/test_config_flow.py`
 
-Garth login is synchronous, so we run it inside `hass.async_add_executor_job`. The MFA step uses garth's `prompt_mfa` callback bridged to a separate flow step via an `asyncio.Future`.
+`ha_garmin.GarminAuth.login` is synchronous, so we run it inside `hass.async_add_executor_job` (the work happens inside `GarminDiveAuth.login`). MFA is signalled by `ha_garmin` raising `GarminMFARequired`; our `GarminDiveAuth.login` accepts an async `mfa_provider` callable that resolves the user-entered code. The config flow plumbs that callable through an `asyncio.Future` so the user types the code in a separate `async_step_mfa` form.
 
 - [ ] **Step 1: Write failing tests**
 
@@ -4383,6 +4474,7 @@ async def test_user_step_happy_path(hass, social_profile_payload):
         instance = mock_cls.return_value
         instance.login = AsyncMock(return_value=social_profile_payload)
         instance.serialize = MagicMock(return_value={"profile_id": 106627261})
+        instance.save_ha_garmin_session = AsyncMock()
 
         result = await hass.config_entries.flow.async_init(
             "garmin_dive", context={"source": SOURCE_USER}
@@ -4424,6 +4516,7 @@ async def test_unique_id_is_profile_id(hass, social_profile_payload):
         instance = mock_cls.return_value
         instance.login = AsyncMock(return_value=social_profile_payload)
         instance.serialize = MagicMock(return_value={"profile_id": 106627261})
+        instance.save_ha_garmin_session = AsyncMock()
 
         result = await hass.config_entries.flow.async_init(
             "garmin_dive", context={"source": SOURCE_USER}
@@ -4449,9 +4542,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
+from ha_garmin import GarminAuth
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -4506,18 +4601,17 @@ class GarminDiveConfigFlow(ConfigFlow, domain=DOMAIN):
 
         self._email = user_input[CONF_EMAIL]
         self._password = user_input[CONF_PASSWORD]
-        return await self._try_login(mfa_code=None)
+        return await self._start_login()
 
     async def async_step_mfa(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         if user_input is None:
             return self.async_show_form(step_id="mfa", data_schema=MFA_SCHEMA)
-        if self._mfa_future is None:
+        if self._mfa_future is None or self._login_task is None:
             return self.async_abort(reason="unknown_error")
         self._mfa_future.set_result(user_input["mfa_code"])
         try:
-            assert self._login_task is not None
             profile = await self._login_task
         except Exception as err:  # pragma: no cover - defensive
             _LOGGER.exception("Garmin login after MFA failed: %s", err)
@@ -4526,31 +4620,33 @@ class GarminDiveConfigFlow(ConfigFlow, domain=DOMAIN):
             )
         return await self._finalize(profile)
 
-    async def _try_login(self, *, mfa_code: str | None) -> ConfigFlowResult:
-        import garth  # local import keeps test patching simple
-
-        garth_client = garth.Client()
+    async def _start_login(self) -> ConfigFlowResult:
+        ha_auth = GarminAuth()
         api = GarminDiveClient(
             session=async_get_clientsession(self.hass),
             get_token=lambda: asyncio.sleep(0, result=""),  # not used during login
         )
-        self._auth = GarminDiveAuth(garth_client=garth_client, api=api)
+        self._auth = GarminDiveAuth(ha_auth=ha_auth, api=api)
 
         loop = asyncio.get_running_loop()
         self._mfa_future = loop.create_future()
 
-        async def prompt_mfa() -> str:
+        async def mfa_provider() -> str:
             assert self._mfa_future is not None
             return await self._mfa_future
 
         async def run_login() -> dict[str, Any]:
             return await self._auth.login(
-                self._email, self._password, prompt_mfa=prompt_mfa
+                hass=self.hass,
+                email=self._email,
+                password=self._password,
+                mfa_provider=mfa_provider,
             )
 
         self._login_task = asyncio.create_task(run_login())
 
-        # Race: either login completes (no MFA) or asks for code (future awaited).
+        # Race: either login completes synchronously (no MFA) or blocks on the
+        # mfa_provider future.
         try:
             done, _ = await asyncio.wait(
                 [self._login_task], timeout=4.0, return_when=asyncio.FIRST_COMPLETED
@@ -4558,11 +4654,12 @@ class GarminDiveConfigFlow(ConfigFlow, domain=DOMAIN):
             if done:
                 profile = self._login_task.result()
                 return await self._finalize(profile)
-            # Still pending => login is blocked on prompt_mfa
+            # Still pending => login is blocked on mfa_provider
             return self.async_show_form(step_id="mfa", data_schema=MFA_SCHEMA)
         except Exception as err:
             _LOGGER.exception("Garmin login failed: %s", err)
-            self._login_task.cancel()
+            if not self._login_task.done():
+                self._login_task.cancel()
             return self.async_show_form(
                 step_id="user",
                 data_schema=USER_SCHEMA,
@@ -4571,9 +4668,22 @@ class GarminDiveConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def _finalize(self, profile: dict[str, Any]) -> ConfigFlowResult:
         assert self._auth is not None
-        await self.async_set_unique_id(str(profile["profileId"]))
+        profile_id = str(profile["profileId"])
+        await self.async_set_unique_id(profile_id)
         self._abort_if_unique_id_configured()
-        title = f"Garmin Dive — {profile.get('displayName') or profile.get('fullName') or profile['profileId']}"
+
+        # Persist the upstream ha-garmin session (refresh tokens etc.) under
+        # config/.storage/ so reauth doesn't always require the password.
+        session_path = self.hass.config.path(
+            ".storage", f"{DOMAIN}_{profile_id}_session.json"
+        )
+        Path(session_path).parent.mkdir(parents=True, exist_ok=True)
+        await self._auth.save_ha_garmin_session(self.hass, session_path)
+
+        title = (
+            "Garmin Dive — "
+            f"{profile.get('displayName') or profile.get('fullName') or profile_id}"
+        )
         return self.async_create_entry(title=title, data=self._auth.serialize())
 
     async def async_step_reauth(
@@ -4726,7 +4836,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-import garth
+from ha_garmin import GarminAuth
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -4757,10 +4867,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         session=session,
         get_token=lambda: auth.get_dive_token(),
     )
-    garth_client = garth.Client()
+    ha_auth = GarminAuth()
     auth = GarminDiveAuth.from_entry_data(
-        entry.data, garth_client=garth_client, api=api
+        entry.data, ha_auth=ha_auth, api=api
     )
+
+    # Re-load the persisted ha-garmin session so reauth (or DIVE-token
+    # refresh fallback) doesn't always require re-typing the password.
+    if auth.session_path:
+        try:
+            await auth.load_ha_garmin_session(hass, auth.session_path)
+        except Exception as err:  # pragma: no cover - defensive
+            _LOGGER.warning("Failed to reload ha-garmin session: %s", err)
 
     # Photo cache (config/www/garmin_dive/<account_short>/...)
     photo_cache: PhotoCache | None = None
@@ -4863,7 +4981,7 @@ from homeassistant.core import HomeAssistant
 REDACT = {
     "dive_access_token",
     "dive_refresh_token",
-    "garth_session",
+    "session_path",
     "profile_id",
     "userName",
     "garminGUID",

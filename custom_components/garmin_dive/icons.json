@@ -1,0 +1,36 @@
+{
+  "entity": {
+    "sensor": {
+      "last_dive": { "default": "mdi:diving-scuba" },
+      "total_dives": { "default": "mdi:counter" },
+      "current_year_dives": { "default": "mdi:calendar-month" },
+      "dives_by_tag": { "default": "mdi:tag-multiple" },
+      "last_dive_max_depth": { "default": "mdi:arrow-collapse-down" },
+      "last_dive_bottom_time": { "default": "mdi:timer-sand" },
+      "last_dive_surface_interval": { "default": "mdi:timer" },
+      "dive_log_year": { "default": "mdi:timeline-clock" },
+      "gear_count": { "default": "mdi:bag-personal" },
+      "gear_service_status": { "default": "mdi:tools" },
+      "gear_days_until_service": { "default": "mdi:calendar-clock" },
+      "gear_next_service_date": { "default": "mdi:calendar" },
+      "gear_last_service_date": { "default": "mdi:calendar" },
+      "gear_dives_with": { "default": "mdi:counter" },
+      "gear_total_dive_time": { "default": "mdi:timer-outline" },
+      "gear_purchase_date": { "default": "mdi:calendar" },
+      "gear_purchase_price": { "default": "mdi:cash" },
+      "dive_computer_gear_tracking_status": { "default": "mdi:watch" },
+      "dive_computer_serial_number": { "default": "mdi:identifier" },
+      "dive_computer_part_number": { "default": "mdi:barcode" }
+    },
+    "binary_sensor": {
+      "service_due": { "default": "mdi:wrench-clock" },
+      "new_dive_available": { "default": "mdi:diving-helmet" }
+    },
+    "calendar": {
+      "dives": { "default": "mdi:calendar-blank-outline" }
+    },
+    "button": {
+      "refresh": { "default": "mdi:refresh" }
+    }
+  }
+}

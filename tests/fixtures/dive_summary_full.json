@@ -1,0 +1,87 @@
+{
+  "totalCount": 68,
+  "pageSize": 100,
+  "pageNumber": 0,
+  "diveActivities": [
+    {
+      "id": 23285230,
+      "connectActivityId": 20180546488,
+      "name": "Test Site Alpha",
+      "diveType": "SINGLE_GAS",
+      "number": 68,
+      "excludedFromDLN": false,
+      "startTime": "2025-06-15T10:00:00+00:00",
+      "timezone": "UTC",
+      "totalTime": 2807.98,
+      "maxDepth": 26.373,
+      "bottomTime": 2747.59,
+      "diveTags": ["RECREATIONAL", "TRAINING_CERTIFICATION", "WARM_WATER"],
+      "activitySource": "GARMIN_DEVICE",
+      "gases": [
+        {
+          "gasStatus": "BOTTOM_GAS",
+          "gasType": "AIR",
+          "percentOxygen": 21,
+          "percentHelium": 0,
+          "gasMode": "OPEN_CIRCUIT"
+        }
+      ],
+      "surfaceInterval": 2743,
+      "contentVisibility": "PRIVATE"
+    },
+    {
+      "id": 23285231,
+      "connectActivityId": 20180546492,
+      "name": "Test Site Beta",
+      "diveType": "SINGLE_GAS",
+      "entryLoc": { "latitude": 0.0, "longitude": 0.0 },
+      "number": 67,
+      "excludedFromDLN": false,
+      "startTime": "2025-06-15T08:30:00+00:00",
+      "timezone": "UTC",
+      "totalTime": 2619.22,
+      "maxDepth": 33.492,
+      "bottomTime": 2558.17,
+      "diveTags": ["RECREATIONAL", "TRAINING_CERTIFICATION", "WARM_WATER"],
+      "activitySource": "GARMIN_DEVICE",
+      "gases": [
+        {
+          "gasStatus": "BOTTOM_GAS",
+          "gasType": "AIR",
+          "percentOxygen": 21,
+          "percentHelium": 0,
+          "gasMode": "OPEN_CIRCUIT"
+        }
+      ],
+      "surfaceInterval": 68183,
+      "contentVisibility": "PRIVATE"
+    },
+    {
+      "id": 23261609,
+      "connectActivityId": 20170276106,
+      "name": "Test Site Gamma",
+      "diveType": "SINGLE_GAS",
+      "entryLoc": { "latitude": 0.0, "longitude": 0.0 },
+      "number": 66,
+      "excludedFromDLN": false,
+      "startTime": "2025-06-14T11:30:00+00:00",
+      "timezone": "UTC",
+      "totalTime": 3005.39,
+      "maxDepth": 15.363,
+      "bottomTime": 2944.37,
+      "diveTags": ["RECREATIONAL", "WARM_WATER"],
+      "activitySource": "GARMIN_DEVICE",
+      "gases": [
+        {
+          "gasStatus": "BOTTOM_GAS",
+          "gasType": "AIR",
+          "percentOxygen": 21,
+          "percentHelium": 0,
+          "gasMode": "OPEN_CIRCUIT"
+        }
+      ],
+      "surfaceInterval": 2849,
+      "contentVisibility": "PRIVATE"
+    }
+  ]
+}

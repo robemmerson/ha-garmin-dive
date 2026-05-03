@@ -1,0 +1,84 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sign in to Garmin",
+        "data": { "email": "Email", "password": "Password" }
+      },
+      "mfa": {
+        "title": "Two-factor code",
+        "description": "Enter the code from your authenticator app or text message.",
+        "data": { "mfa_code": "Code" }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate",
+        "data": { "email": "Email", "password": "Password" }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid credentials.",
+      "cannot_connect": "Failed to connect to Garmin.",
+      "unknown_error": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This Garmin account is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Garmin Dive options",
+        "data": {
+          "scan_interval_minutes": "Polling interval (minutes)",
+          "photo_cache_enabled": "Cache photos locally",
+          "history_scope": "History scope",
+          "max_cache_age_days": "Max cache age (days, 0 = never evict)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "last_dive": { "name": "Last dive" },
+      "total_dives": { "name": "Total dives" },
+      "current_year_dives": { "name": "Dives this year" },
+      "dives_by_tag": { "name": "Dives by tag" },
+      "last_dive_max_depth": { "name": "Last dive max depth" },
+      "last_dive_bottom_time": { "name": "Last dive bottom time" },
+      "last_dive_surface_interval": { "name": "Last dive surface interval" },
+      "dive_log_year": { "name": "Dive log (year)" },
+      "gear_count": { "name": "Gear items" },
+      "gear_service_status": { "name": "Service status" },
+      "gear_days_until_service": { "name": "Days until service" },
+      "gear_next_service_date": { "name": "Next service date" },
+      "gear_last_service_date": { "name": "Last service date" },
+      "gear_dives_with": { "name": "Dives with" },
+      "gear_total_dive_time": { "name": "Total dive time" },
+      "gear_purchase_date": { "name": "Purchase date" },
+      "gear_purchase_price": { "name": "Purchase price" },
+      "dive_computer_gear_tracking_status": { "name": "Gear tracking" },
+      "dive_computer_serial_number": { "name": "Serial" },
+      "dive_computer_part_number": { "name": "Part number" }
+    },
+    "binary_sensor": {
+      "service_due": { "name": "Service due" },
+      "new_dive_available": { "name": "New dive available" }
+    },
+    "calendar": {
+      "dives": { "name": "Dives" }
+    },
+    "button": {
+      "refresh": { "name": "Refresh" }
+    }
+  },
+  "services": {
+    "refresh": {
+      "name": "Refresh",
+      "description": "Force an immediate refresh of all Garmin Dive accounts."
+    },
+    "acknowledge_new_dive": {
+      "name": "Acknowledge new dive",
+      "description": "Clear the New Dive Available binary sensor."
+    }
+  }
+}

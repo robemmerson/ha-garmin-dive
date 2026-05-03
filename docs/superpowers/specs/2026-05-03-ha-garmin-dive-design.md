@@ -4,6 +4,8 @@
 **Status:** Draft for review
 **Repo:** `ha-garmin-dive` (HACS-installable custom component)
 
+> **Deviation note (added during implementation):** §3.1 / §4 / §5 reference the `garth` library. `garth` was [deprecated](https://github.com/matin/garth/discussions/222) in 2026 because Garmin's TLS-fingerprinting changes broke its mobile-auth flow. Implementation switched to [`ha-garmin`](https://pypi.org/project/ha-garmin/) (used by `cyberjunky/home-assistant-garmin_connect`), which uses `curl_cffi` to impersonate a browser. The architecture is otherwise unchanged: get a Connect bearer via `ha-garmin`, exchange to `DIVE_MOBILE_IOS_DI` audience, drive `gcs.garmin.com` from there. See plan T9 / T23 / T24 for the up-to-date code.
+
 ## 1. Goals & non-goals
 
 ### Goals
@@ -167,7 +169,7 @@ Each Garmin account is a top-level HA Device. Dive computers (from `/dive/device
 Garmin Dive — Rob
 ├── Descent Mk2i              (DIVE_COMPUTER, serial 3403334227, image from Garmin CDN)
 ├── Descent T1                (TRANSMITTER, serial 3399109144, ANT channel 356952664)
-├── Apeks Double Gauge SPG    (REGULATOR, serviced 2025-04-04, due 2027-04-04)
+├── Apeks Double Gauge SPG    (REGULATOR, serviced 2025-01-01, due 2027-01-01)
 ├── Atomic B2 Regulator       (REGULATOR, DIN, piston, serial 1CA0062)
 ├── LetonPower Sealion L24    (LIGHT, photography, HID, 12000 lumen)
 ├── Miflex Hose Extension     (OTHER, 15cm)

@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync manifest version with release tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          python - <<PY
+          import json, pathlib
+          p = pathlib.Path("custom_components/garmin_dive/manifest.json")
+          m = json.loads(p.read_text())
+          m["version"] = "${VERSION}"
+          p.write_text(json.dumps(m, indent=2) + "\n")
+          PY
+
+      - name: Zip integration
+        run: |
+          cd custom_components/garmin_dive
+          zip -r ../../garmin_dive.zip .
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: garmin_dive.zip

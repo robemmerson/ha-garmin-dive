@@ -6,8 +6,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from custom_components.garmin_dive.const import EVENT_NEW_DIVE
 from custom_components.garmin_dive.coordinator import (
     CoordinatorData,
+    GarminDiveCoordinator,
     build_data,
 )
 from custom_components.garmin_dive.photos import PhotoCache
@@ -91,3 +93,30 @@ async def test_build_data_with_photos_collects_gear_images(fake_api, tmp_path, l
     )
     assert "315aa699-ea9b-4323-8177-3d8a77b28e24" in downloaded
     assert any(g.photo_local_url for g in data.gear if g.gear_id == 247811)
+
+
+async def test_coordinator_fires_new_dive_event(hass, fake_api):
+    """When totalCount increases, fire garmin_dive_new_dive."""
+    auth = MagicMock()
+    auth.profile_id = 106627261
+
+    coordinator = GarminDiveCoordinator(
+        hass,
+        api=fake_api,
+        auth=auth,
+        photo_cache=None,
+        http_session=MagicMock(),
+        scan_interval_minutes=120,
+    )
+    # Seed with a previous snapshot saying we knew of dives 23285230 and 23261609.
+    coordinator._known_dive_ids = {23285230, 23261609}
+
+    fired: list = []
+    hass.bus.async_listen(EVENT_NEW_DIVE, lambda evt: fired.append(evt.data))
+
+    await coordinator._async_update_data()
+    await hass.async_block_till_done()
+
+    new_ids = [d["dive"]["id"] for d in fired]
+    assert 23285231 in new_ids  # the second Elphinstone
+    assert 23285230 not in new_ids

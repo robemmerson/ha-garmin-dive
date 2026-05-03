@@ -5,9 +5,14 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
+from datetime import date, timedelta
 from typing import TYPE_CHECKING, Any
 
-from .gear import GearSnapshot, needs_detail_fetch
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+
+from .const import DOMAIN, EVENT_NEW_DIVE, EVENT_SERVICE_DUE
+from .gear import GearSnapshot, detect_service_status_flips, needs_detail_fetch
 from .photos import PhotoCache, PhotoRecord
 
 if TYPE_CHECKING:
@@ -214,3 +219,81 @@ def _first_image(detail: dict[str, Any] | None) -> dict[str, Any] | None:
         return None
     images = detail.get("media", {}).get("images") or []
     return images[0] if images else None
+
+
+class GarminDiveCoordinator(DataUpdateCoordinator[CoordinatorData]):
+    """Per-account refresh loop for the integration."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        *,
+        api: GarminDiveClient,
+        auth: Any,
+        photo_cache: PhotoCache | None,
+        http_session: Any,
+        scan_interval_minutes: int,
+    ) -> None:
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=DOMAIN,
+            update_interval=timedelta(minutes=scan_interval_minutes),
+        )
+        self._api = api
+        self._auth = auth
+        self._photo_cache = photo_cache
+        self._http_session = http_session
+        self._known_dive_ids: set[int] = set()
+        self._previous_due_indicators: dict[int, str] = {}
+        self._previous_gear_last_modified: dict[int, str] = {}
+
+    async def _async_update_data(self) -> CoordinatorData:
+        try:
+            data = await build_data(
+                api=self._api,
+                current_user_date=date.today().isoformat(),
+                previous_gear_last_modified=self._previous_gear_last_modified,
+                photo_cache=self._photo_cache,
+                http_session=self._http_session,
+                profile_id=self._auth.profile_id,
+                year=date.today().year,
+            )
+        except Exception as err:
+            raise UpdateFailed(f"Garmin Dive refresh failed: {err}") from err
+
+        self._fire_event_diffs(data)
+        self._previous_gear_last_modified = dict(data.gear_snapshot.last_modified)
+        self._previous_due_indicators = dict(data.gear_snapshot.due_indicators)
+        self._known_dive_ids = {d.id for d in data.dives}
+        return data
+
+    def _fire_event_diffs(self, data: CoordinatorData) -> None:
+        # New dives — only fire if we had a prior set (skip first run)
+        for dive in data.dives:
+            if dive.id not in self._known_dive_ids and self._known_dive_ids:
+                self.hass.bus.async_fire(
+                    EVENT_NEW_DIVE,
+                    {
+                        "profile_id": self._auth.profile_id,
+                        "dive": dive.raw,
+                    },
+                )
+
+        # Service-due transitions
+        if not self._previous_due_indicators:
+            return  # don't fire on first run
+        flips = detect_service_status_flips(
+            self._previous_due_indicators, data.gear_snapshot.due_indicators
+        )
+        for gear_id, indicator in flips.items():
+            gear = next((g for g in data.gear if g.gear_id == gear_id), None)
+            if gear is not None:
+                self.hass.bus.async_fire(
+                    EVENT_SERVICE_DUE,
+                    {
+                        "profile_id": self._auth.profile_id,
+                        "gear": gear.summary_raw,
+                        "indicator": indicator,
+                    },
+                )

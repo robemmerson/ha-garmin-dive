@@ -1,0 +1,182 @@
+"""Garmin Dive sensor entities."""
+
+from __future__ import annotations
+
+from datetime import date, datetime
+from typing import TYPE_CHECKING, Any
+
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import UnitOfLength, UnitOfTime
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+from .entity import GarminDiveAccountEntity
+
+if TYPE_CHECKING:
+    from .coordinator import Dive, GarminDiveCoordinator
+
+
+def _connect_url(connect_activity_id: int | None) -> str | None:
+    if connect_activity_id is None:
+        return None
+    return f"https://connect.garmin.com/modern/activity/{connect_activity_id}"
+
+
+def _last_dive(coordinator: GarminDiveCoordinator) -> Dive | None:
+    if not coordinator.data or not coordinator.data.dives:
+        return None
+    return coordinator.data.dives[0]
+
+
+class LastDiveSensor(GarminDiveAccountEntity, SensorEntity):
+    _attr_translation_key = "last_dive"
+    _attr_icon = "mdi:diving-scuba"
+
+    def __init__(self, coordinator: GarminDiveCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._account_id}_last_dive"
+
+    @property
+    def native_value(self) -> str | None:
+        d = _last_dive(self.coordinator)
+        return d.name if d else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        d = _last_dive(self.coordinator)
+        if d is None:
+            return None
+        raw = d.raw
+        return {
+            "id": d.id,
+            "connect_activity_id": raw.get("connectActivityId"),
+            "connect_url": _connect_url(raw.get("connectActivityId")),
+            "start_time": raw.get("startTime"),
+            "timezone": raw.get("timezone"),
+            "max_depth": raw.get("maxDepth"),
+            "bottom_time_minutes": ((raw["bottomTime"] / 60) if "bottomTime" in raw else None),
+            "total_time_minutes": ((raw["totalTime"] / 60) if "totalTime" in raw else None),
+            "surface_interval_hours": (
+                (raw["surfaceInterval"] / 3600) if "surfaceInterval" in raw else None
+            ),
+            "tags": raw.get("diveTags"),
+            "gases": raw.get("gases"),
+            "location": raw.get("entryLoc"),
+            "dive_type": raw.get("diveType"),
+        }
+
+
+class TotalDivesSensor(GarminDiveAccountEntity, SensorEntity):
+    _attr_translation_key = "total_dives"
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_icon = "mdi:counter"
+
+    def __init__(self, coordinator: GarminDiveCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._account_id}_total_dives"
+
+    @property
+    def native_value(self) -> int:
+        return self.coordinator.data.total_dives if self.coordinator.data else 0
+
+
+class CurrentYearDivesSensor(GarminDiveAccountEntity, SensorEntity):
+    _attr_translation_key = "current_year_dives"
+    _attr_icon = "mdi:calendar-month"
+
+    def __init__(self, coordinator: GarminDiveCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._account_id}_current_year_dives"
+
+    @property
+    def native_value(self) -> int:
+        if not self.coordinator.data:
+            return 0
+        year = date.today().year
+        return sum(
+            1
+            for d in self.coordinator.data.dives
+            if datetime.fromisoformat(d.start_time).year == year
+        )
+
+
+class LastDiveMaxDepthSensor(GarminDiveAccountEntity, SensorEntity):
+    _attr_translation_key = "last_dive_max_depth"
+    _attr_device_class = SensorDeviceClass.DISTANCE
+    _attr_native_unit_of_measurement = UnitOfLength.METERS
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:arrow-collapse-down"
+
+    def __init__(self, coordinator: GarminDiveCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._account_id}_last_dive_max_depth"
+
+    @property
+    def native_value(self) -> float | None:
+        d = _last_dive(self.coordinator)
+        return d.max_depth if d else None
+
+
+class LastDiveBottomTimeSensor(GarminDiveAccountEntity, SensorEntity):
+    _attr_translation_key = "last_dive_bottom_time"
+    _attr_device_class = SensorDeviceClass.DURATION
+    _attr_native_unit_of_measurement = UnitOfTime.MINUTES
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:timer-sand"
+
+    def __init__(self, coordinator: GarminDiveCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._account_id}_last_dive_bottom_time"
+
+    @property
+    def native_value(self) -> float | None:
+        d = _last_dive(self.coordinator)
+        if d is None:
+            return None
+        bt = d.raw.get("bottomTime")
+        return bt / 60 if bt is not None else None
+
+
+class LastDiveSurfaceIntervalSensor(GarminDiveAccountEntity, SensorEntity):
+    _attr_translation_key = "last_dive_surface_interval"
+    _attr_device_class = SensorDeviceClass.DURATION
+    _attr_native_unit_of_measurement = UnitOfTime.HOURS
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:timer"
+
+    def __init__(self, coordinator: GarminDiveCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._account_id}_last_dive_surface_interval"
+
+    @property
+    def native_value(self) -> float | None:
+        d = _last_dive(self.coordinator)
+        if d is None:
+            return None
+        si = d.raw.get("surfaceInterval")
+        return si / 3600 if si is not None else None
+
+
+# --- Platform setup --------------------------------------------------------
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    coordinator: GarminDiveCoordinator = entry.runtime_data
+    entities: list[SensorEntity] = [
+        LastDiveSensor(coordinator),
+        TotalDivesSensor(coordinator),
+        CurrentYearDivesSensor(coordinator),
+        LastDiveMaxDepthSensor(coordinator),
+        LastDiveBottomTimeSensor(coordinator),
+        LastDiveSurfaceIntervalSensor(coordinator),
+    ]
+    async_add_entities(entities)

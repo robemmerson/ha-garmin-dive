@@ -70,7 +70,7 @@ GarminDiveAuth ── garth ──► Garmin SSO + OAuth1→OAuth2 exchange
 GarminDiveClient ── HTTP / GraphQL ──► gcs.garmin.com / diauth.garmin.com / connectapi.garmin.com
         │
         ▼
-GarminDiveCoordinator (DataUpdateCoordinator, default 30 min)
+GarminDiveCoordinator (DataUpdateCoordinator, default 2h)
         │  • dive summary (resultsPerPage=100)
         │  • dive devices, dive tags
         │  • gear summary, gear detail (delta-fetch by lastModifiedTs)
@@ -121,7 +121,7 @@ HA device for the account + sub-devices for each dive computer + each gear item
 
 | Option | Default | Range |
 |---|---|---|
-| `scan_interval_minutes` | 30 | 5–360 |
+| `scan_interval_minutes` | 120 | 5–360 |
 | `photo_cache_enabled` | true | bool |
 | `history_scope` | `current_year_plus_one` | `current_year` / `current_year_plus_one` / `all_time` |
 | `max_cache_age_days` | 0 (never evict) | 0–3650 |
@@ -134,7 +134,7 @@ HA device for the account + sub-devices for each dive computer + each gear item
 
 ### 6.1 Coordinator cycle
 
-Each tick (default 30 min) fans out the calls in parallel:
+Each tick (default 2 h; configurable 5 min – 6 h via options flow; manual `button.refresh` is the trip-day path) fans out the calls in parallel:
 
 1. `GET /diving/v1/dive/summary?requestedPage=0&resultsPerPage=100` — single call returns `totalCount` and the entire activity list (a 68-dive locker fits in one response). Pagination loop only kicks in if `totalCount > pageSize` and `history_scope == all_time`.
 2. `GET /diving/v1/dive/devices` — cheap.
@@ -186,7 +186,7 @@ Garmin Dive — Rob
 | `sensor` | `last_dive_max_depth` | float | `device_class=distance`, `native_unit_of_measurement="m"`; HA auto-converts to feet for users on imperial. |
 | `sensor` | `last_dive_bottom_time` | float, minutes | `device_class=duration`, `native_unit_of_measurement="min"` |
 | `sensor` | `last_dive_surface_interval` | float, hours | `device_class=duration`, `native_unit_of_measurement="h"` |
-| `sensor` | `dive_log_year` | int (count this year) | **The big one.** `attributes.dives = [{id, name, start, end, timezone, max_depth, bottom_time, total_time, surface_interval, tags, gases, location:{lat,lng}|null, photos:{thumb,medium,large}, connect_url, dive_computer}, …]`. Powers the horizontally-scrolling year timeline. |
+| `sensor` | `dive_log_year` | int (count this year) | **The big one.** `attributes.dives = [{id, name, start, end, timezone, max_depth, average_depth, bottom_time, total_time, surface_interval, tags, gases, location:{lat,lng}|null, photos:{thumb,medium,large}, connect_url, dive_computer}, …]`. Powers the horizontally-scrolling year timeline. (See §13 for the `average_depth` source.) |
 | `sensor` | `gear_count` | int | attributes: per-type breakdown (REGULATOR=2, LIGHT=1, …) |
 | `binary_sensor` | `new_dive_available` | on/off | latches on after `total_dives` increments; cleared on next refresh after acknowledgment via service call |
 | `binary_sensor` | `service_due` | on/off | on whenever any gear has `dueIndicator ∈ {DUE, OVERDUE}` |
@@ -311,10 +311,10 @@ ha-garmin-dive/
   "domain": "garmin_dive",
   "name": "Garmin Dive",
   "version": "0.1.0",
-  "codeowners": ["@<your-github>"],
+  "codeowners": ["@robemmerson"],
   "config_flow": true,
-  "documentation": "https://github.com/<you>/ha-garmin-dive",
-  "issue_tracker": "https://github.com/<you>/ha-garmin-dive/issues",
+  "documentation": "https://github.com/robemmerson/ha-garmin-dive",
+  "issue_tracker": "https://github.com/robemmerson/ha-garmin-dive/issues",
   "iot_class": "cloud_polling",
   "integration_type": "hub",
   "requirements": ["garth>=0.5.0"]
@@ -362,6 +362,7 @@ Phase boundaries are guidance for the writing-plans pass; the integration ships 
 ## 13. Open questions / things to confirm during implementation
 
 - **Dive-photos GraphQL operation name.** Capture from the Photos screen during phase 4.
+- **`average_depth` source.** Not present in `/dive/summary`. Likely available via a per-dive detail endpoint (probable shape: `GET /diving/v1/dive/activity/{id}` or via a `DiveActivity` GraphQL operation) — to be discovered by capturing the Dive Detail screen during phase 3. Fetch is per-new-dive only (one extra call per dive added since last cycle); steady-state cost is zero. If no field surfaces it directly, fall back to omitting `average_depth` (do **not** estimate from `max_depth` — would mislead divers).
 - **`dive.activitySource` mapping to a specific dive computer.** Inspect `/dive/summary` payloads with both Mk2i and Mk2s data; if the source field doesn't disambiguate, the per-dive-computer device entities stay limited to identity/tracking sensors and dive metrics remain on the account.
 - **Gear `lastModifiedTs` granularity.** Confirm whether the gear summary endpoint returns `lastModifiedTs` (the captured payload showed it on detail responses but not in summary). If summary lacks it, fall back to fetching detail every cycle for a small constant N (≤ ~10 items expected).
 

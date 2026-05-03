@@ -1,0 +1,7 @@
+refresh:
+  name: Refresh
+  description: Force an immediate refresh of all Garmin Dive accounts.
+
+acknowledge_new_dive:
+  name: Acknowledge new dive
+  description: Mark the latest dive as seen so the new_dive_available binary sensor turns off.

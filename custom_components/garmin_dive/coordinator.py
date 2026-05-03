@@ -248,7 +248,10 @@ class GarminDiveCoordinator(DataUpdateCoordinator[CoordinatorData]):
         self._known_dive_ids: set[int] = set()
         self._previous_due_indicators: dict[int, str] = {}
         self._previous_gear_last_modified: dict[int, str] = {}
-        self._latest_dive_acknowledged_id: int | None = None
+        # Public: read by NewDiveAvailableBinarySensor and written by the
+        # garmin_dive.acknowledge_new_dive service. Volatile — not persisted
+        # across HA restarts in v0.1.
+        self.latest_dive_acknowledged_id: int | None = None
 
     async def _async_update_data(self) -> CoordinatorData:
         try:
@@ -277,6 +280,7 @@ class GarminDiveCoordinator(DataUpdateCoordinator[CoordinatorData]):
                 self.hass.bus.async_fire(
                     EVENT_NEW_DIVE,
                     {
+                        "account_id": str(self._auth.profile_id),
                         "profile_id": self._auth.profile_id,
                         "dive": dive.raw,
                     },
@@ -294,6 +298,7 @@ class GarminDiveCoordinator(DataUpdateCoordinator[CoordinatorData]):
                 self.hass.bus.async_fire(
                     EVENT_SERVICE_DUE,
                     {
+                        "account_id": str(self._auth.profile_id),
                         "profile_id": self._auth.profile_id,
                         "gear": gear.summary_raw,
                         "indicator": indicator,

@@ -76,6 +76,8 @@ cards:
         {% endfor %}
 ```
 
+> **Note (v0.1):** Per-dive photo URLs are populated as `null` until a follow-up release wires the Dive Photos GraphQL operation (see spec §13 — operation name TBD). The `or "/local/garmin_dive/placeholder.png"` fallback above keeps the cards rendering with a placeholder image. **Gear photos** are wired and work today via the `entity_picture` on each gear sub-device.
+
 (For a polished version with photo lightbox, see the wiki — link added once published.)
 
 ### Native HA Calendar card

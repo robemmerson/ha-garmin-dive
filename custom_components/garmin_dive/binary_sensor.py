@@ -51,7 +51,7 @@ class NewDiveAvailableBinarySensor(GarminDiveAccountEntity, BinarySensorEntity):
         if not self.coordinator.data or not self.coordinator.data.dives:
             return False
         latest = self.coordinator.data.dives[0].id
-        ack = getattr(self.coordinator, "_latest_dive_acknowledged_id", None)
+        ack = self.coordinator.latest_dive_acknowledged_id
         return ack != latest
 
 

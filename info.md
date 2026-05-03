@@ -12,7 +12,7 @@ Designed to coexist with the standard HACS Garmin Connect integration — this o
 - Per-gear-item sub-devices with service-status + lifetime-usage sensors
 - `binary_sensor.service_due` flips on when any gear is due/overdue
 - Photos cached locally so dashboards never hit expiring S3 URLs
-- MFA-aware login via `garth`
+- MFA-aware login via `ha-garmin`
 - Multi-account ready
 
 ## Configuration

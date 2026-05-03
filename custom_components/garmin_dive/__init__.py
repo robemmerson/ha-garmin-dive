@@ -84,7 +84,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async def _service_acknowledge(call: ServiceCall) -> None:
             for e in hass.config_entries.async_entries(DOMAIN):
                 if hasattr(e, "runtime_data") and e.runtime_data.data and e.runtime_data.data.dives:
-                    e.runtime_data._latest_dive_acknowledged_id = e.runtime_data.data.dives[0].id
+                    e.runtime_data.latest_dive_acknowledged_id = e.runtime_data.data.dives[0].id
                     e.runtime_data.async_update_listeners()
 
         hass.services.async_register(DOMAIN, "refresh", _service_refresh)
@@ -95,7 +95,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a Garmin Dive config entry."""
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unloaded:
+        # When the last entry goes away, drop the global services so they
+        # can't be invoked against a stale runtime_data.
+        remaining = [
+            e for e in hass.config_entries.async_entries(DOMAIN) if e.entry_id != entry.entry_id
+        ]
+        if not remaining:
+            hass.services.async_remove(DOMAIN, "refresh")
+            hass.services.async_remove(DOMAIN, "acknowledge_new_dive")
+    return unloaded
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

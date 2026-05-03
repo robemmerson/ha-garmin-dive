@@ -36,8 +36,8 @@ async def test_service_due_off_when_all_not_due(hass, load_fixture):
 async def test_new_dive_available_latches_until_acknowledged(hass, load_fixture):
     data = make_data(summary=load_fixture("dive_summary_full"))
     coord = make_fake_coordinator(hass=hass, data=data)
-    coord._latest_dive_acknowledged_id = None
+    coord.latest_dive_acknowledged_id = None
     sensor = NewDiveAvailableBinarySensor(coord)
     assert sensor.is_on is True
-    coord._latest_dive_acknowledged_id = 23285230  # latest dive id
+    coord.latest_dive_acknowledged_id = 23285230  # latest dive id
     assert sensor.is_on is False

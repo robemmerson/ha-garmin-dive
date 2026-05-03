@@ -13,5 +13,5 @@
   "requirements": [
     "ha-garmin>=0.1.19,<0.2"
   ],
-  "version": "0.3.1"
+  "version": "0.3.2"
 }

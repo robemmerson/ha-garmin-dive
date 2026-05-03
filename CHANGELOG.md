@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.2](https://github.com/robemmerson/ha-garmin-dive/compare/v0.3.1...v0.3.2) (2026-05-03)
+
+
+### Bug Fixes
+
+* **sensor:** surface all dive years via _unrecorded_attributes ([d359e6b](https://github.com/robemmerson/ha-garmin-dive/commit/d359e6b3d83eb041d6c2dd0d702ecb1ad45d2d9f))
+* **sensor:** surface all dive years via _unrecorded_attributes ([d5af55b](https://github.com/robemmerson/ha-garmin-dive/commit/d5af55bc3c8d4d7ec7e933c912a00509462fc882))
+
 ## [0.3.1](https://github.com/robemmerson/ha-garmin-dive/compare/v0.3.0...v0.3.1) (2026-05-03)
 
 

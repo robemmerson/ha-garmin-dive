@@ -59,7 +59,6 @@ async def test_handles_empty_dive_list(hass):
     assert TotalDivesSensor(coord).native_value == 0
 
 
-@freeze_time("2026-05-03T12:00:00")
 async def test_dive_log_year_attribute_shape(hass, load_fixture):
     data = make_data(summary=load_fixture("dive_summary_full"))
     coord = make_fake_coordinator(hass=hass, data=data)
@@ -67,6 +66,8 @@ async def test_dive_log_year_attribute_shape(hass, load_fixture):
 
     attrs = sensor.extra_state_attributes
     dives = attrs["dives"]
+    # Surfaces every dive regardless of year; the recorder skips the
+    # `dives` attribute via `_unrecorded_attributes` so size is irrelevant.
     assert len(dives) == 3
     first = dives[0]
     assert {
@@ -93,6 +94,7 @@ async def test_dive_log_year_attribute_shape(hass, load_fixture):
     assert first["connect_url"] == "https://connect.garmin.com/modern/activity/99000001"
     # average_depth is unknown today (spec §13) -> None.
     assert first["average_depth"] is None
+    assert "dives" in DiveLogYearSensor._unrecorded_attributes
 
 
 async def test_dives_by_tag_state_and_attrs(hass, load_fixture):

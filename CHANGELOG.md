@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.4](https://github.com/robemmerson/ha-garmin-dive/compare/v0.3.3...v0.3.4) (2026-05-04)
+
+
+### Bug Fixes
+
+* **sensor:** merge Descent gear and dive-computer sub-devices ([478d35a](https://github.com/robemmerson/ha-garmin-dive/commit/478d35af2b29c733ff3169240b60ee8272746697))
+* **sensor:** merge Descent gear and dive-computer sub-devices ([#18](https://github.com/robemmerson/ha-garmin-dive/issues/18)) ([3251612](https://github.com/robemmerson/ha-garmin-dive/commit/325161253aeb67943e7c1795d861f364e5d1248a))
+
 ## [0.3.3](https://github.com/robemmerson/ha-garmin-dive/compare/v0.3.2...v0.3.3) (2026-05-04)
 
 

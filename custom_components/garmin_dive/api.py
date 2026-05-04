@@ -17,6 +17,7 @@ from .const import (
     HOST_CONNECT_API,
     HOST_DIAUTH,
     HOST_GCS,
+    PATH_ACTIVITY,
     PATH_DIVE_DEVICES,
     PATH_DIVE_SUMMARY,
     PATH_DIVE_TAGS,
@@ -139,6 +140,20 @@ class GarminDiveClient:
             operation_name="PlayerProfile",
             query=query,
             variables={"playerId": profile_id},
+        )
+
+    async def get_activity(self, *, activity_id: int) -> dict[str, Any]:
+        """Per-activity Connect REST endpoint.
+
+        Used as a fallback photo source when the bulk PlayerProfile GraphQL
+        query doesn't return images for a dive (which happens — Garmin's two
+        services have inconsistent coverage). The Dive bearer carries
+        `CONNECT_READ`, so it authenticates against connectapi.garmin.com.
+        """
+        return await self._request(
+            "GET",
+            HOST_CONNECT_API,
+            PATH_ACTIVITY.format(activity_id=activity_id),
         )
 
     # ----- Auxiliary auth + identity calls ----------------------------------

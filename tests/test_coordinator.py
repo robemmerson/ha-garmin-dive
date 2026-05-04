@@ -28,6 +28,9 @@ def fake_api(load_fixture):
             load_fixture("gear_detail_light"),
         ]
     )
+    # Default: per-dive activity-service fallback returns nothing. Tests that
+    # exercise the fallback override this.
+    api.get_activity = AsyncMock(return_value={"metadataDTO": {"activityImages": []}})
     return api
 
 
@@ -169,6 +172,211 @@ async def test_build_data_skips_dive_photo_url_when_download_failed(
     assert matched.photos == {"thumb": None, "medium": None, "large": None}
     # download_failures lists every uuid with no cached sizes (gear + dive).
     assert len(data.photo_stats.download_failures) >= 3
+
+
+async def test_dive_photos_match_by_activity_id_when_dates_disagree(
+    fake_api, tmp_path, load_fixture
+):
+    """Real-world: GraphQL `eventDate` and /dive/summary `startTime` disagree
+    on format (naive vs aware datetimes). Matching by entityReferenceId →
+    connectActivityId still binds the photos to the dive."""
+    # Dive 10000001 has connectActivityId 99000001. Hand a GraphQL response
+    # whose eventDate is naive and so cannot parse-equal the dive's
+    # tz-aware startTime, but whose entityReferenceId points at the activity.
+    photos_resp = {
+        "data": {
+            "playerProfile": {
+                "__typename": "PlayerProfile",
+                "playerProfileId": 999000111,
+                "profileName": "rob",
+                "medias": {
+                    "__typename": "Page_Media",
+                    "totalCount": 2,
+                    "content": [
+                        {
+                            "__typename": "Image",
+                            "imageUUID": "10000000-0000-4000-8000-000000000a01",
+                            "eventDate": "2025-06-15T10:00:00.0",  # naive
+                            "entityReferenceId": "99000001",  # connectActivityId
+                            "versionedUrls": [
+                                {
+                                    "version": "MEDIUM_FEED",
+                                    "url": "https://example.invalid/aaa-mdfd.jpeg?sig=t",
+                                },
+                                {
+                                    "version": "LARGE",
+                                    "url": "https://example.invalid/aaa-larg.jpeg?sig=t",
+                                },
+                            ],
+                        },
+                        {
+                            "__typename": "Image",
+                            "imageUUID": "10000000-0000-4000-8000-000000000a02",
+                            "eventDate": "2025-06-15T10:00:00.0",
+                            "entityReferenceId": "99000001",
+                            "versionedUrls": [
+                                {
+                                    "version": "MEDIUM_FEED",
+                                    "url": "https://example.invalid/bbb-mdfd.jpeg?sig=t",
+                                }
+                            ],
+                        },
+                    ],
+                },
+            }
+        }
+    }
+    fake_api.get_dive_photos = AsyncMock(return_value=photos_resp)
+    cache = PhotoCache(www_dir=tmp_path, account_short="abcd1234")
+
+    async def fake_download(records, *, session):
+        return {r.image_uuid: {"thumb", "medium", "large"} for r in records}
+
+    cache.download_records = fake_download  # type: ignore[assignment]
+
+    data = await build_data(
+        api=fake_api,
+        current_user_date="2026-05-03",
+        previous_gear_last_modified={},
+        photo_cache=cache,
+        http_session=MagicMock(),
+        profile_id=999000111,
+        year=2026,
+    )
+    dive = next(d for d in data.dives if d.id == 10000001)
+    assert dive.photo_count == 2, "expected both photos bound via activity-id match"
+    # Multi-photo: photos_all has both records with usable medium URLs.
+    assert len(dive.photos_all) == 2
+    assert all("/local/garmin_dive/abcd1234/" in (p["medium"] or "") for p in dive.photos_all)
+    # Cover stays single-photo for backward compat with old dashboards.
+    assert dive.photos["medium"] == dive.photos_all[0]["medium"]
+    assert data.photo_stats.matched_by_activity_id >= 1
+    # No fallback HTTP call was issued for this specific dive — the GraphQL
+    # activity-id index already covered it.
+    fallback_aids = {call.kwargs["activity_id"] for call in fake_api.get_activity.call_args_list}
+    assert 99000001 not in fallback_aids
+
+
+async def test_activity_service_fallback_for_dives_missing_from_graphql(
+    fake_api, tmp_path, load_fixture
+):
+    """When GraphQL doesn't return photos for a dive, the per-activity
+    /activity-service endpoint is queried and its activityImages[] are
+    ingested. All photos are surfaced, not just the first."""
+    # GraphQL returns nothing.
+    fake_api.get_dive_photos = AsyncMock(
+        return_value={
+            "data": {
+                "playerProfile": {
+                    "__typename": "PlayerProfile",
+                    "playerProfileId": 999000111,
+                    "profileName": "rob",
+                    "medias": {"__typename": "Page_Media", "totalCount": 0, "content": []},
+                }
+            }
+        }
+    )
+
+    # /activity-service returns 3 photos for connectActivityId 99000001 and
+    # nothing for the others.
+    def activity_resp(activity_id: int) -> dict:
+        if activity_id != 99000001:
+            return {"metadataDTO": {"activityImages": []}}
+        return {
+            "metadataDTO": {
+                "activityImages": [
+                    {
+                        "imageId": f"f0{i}-0000-4000-8000-000000000abc",
+                        "url": f"https://example.invalid/img{i}-larg.jpeg?sig=t",
+                        "smallUrl": f"https://example.invalid/img{i}-smth.jpeg?sig=t",
+                        "mediumUrl": f"https://example.invalid/img{i}-mdfd.jpeg?sig=t",
+                    }
+                    for i in range(3)
+                ]
+            }
+        }
+
+    fake_api.get_activity = AsyncMock(side_effect=lambda *, activity_id: activity_resp(activity_id))
+
+    cache = PhotoCache(www_dir=tmp_path, account_short="abcd1234")
+
+    async def fake_download(records, *, session):
+        return {r.image_uuid: {"thumb", "medium", "large"} for r in records}
+
+    cache.download_records = fake_download  # type: ignore[assignment]
+
+    data = await build_data(
+        api=fake_api,
+        current_user_date="2026-05-03",
+        previous_gear_last_modified={},
+        photo_cache=cache,
+        http_session=MagicMock(),
+        profile_id=999000111,
+        year=2026,
+    )
+
+    dive = next(d for d in data.dives if d.connect_activity_id == 99000001)
+    assert dive.photo_count == 3, "all three activity-service photos should be bound"
+    assert len(dive.photos_all) == 3
+    assert dive.photos["medium"] is not None
+    # The fallback is fired for every dive missing from GraphQL.
+    assert data.photo_stats.activity_fallback_attempted == len(data.dives)
+    assert data.photo_stats.activity_fallback_matched == 1
+    assert data.photo_stats.activity_fallback_errors == []
+
+
+async def test_activity_service_fallback_skipped_when_graphql_already_has_photos(
+    fake_api, tmp_path, load_fixture
+):
+    """If GraphQL already produced records for a dive (by activity-id), the
+    integration must NOT issue a redundant /activity-service call."""
+    photos_resp = {
+        "data": {
+            "playerProfile": {
+                "__typename": "PlayerProfile",
+                "medias": {
+                    "__typename": "Page_Media",
+                    "totalCount": 1,
+                    "content": [
+                        {
+                            "__typename": "Image",
+                            "imageUUID": "20000000-0000-4000-8000-000000000a01",
+                            "eventDate": "2025-06-15T10:00:00+00:00",
+                            "entityReferenceId": "99000001",
+                            "versionedUrls": [
+                                {
+                                    "version": "MEDIUM_FEED",
+                                    "url": "https://example.invalid/x-mdfd.jpeg?sig=t",
+                                }
+                            ],
+                        }
+                    ],
+                },
+            }
+        }
+    }
+    fake_api.get_dive_photos = AsyncMock(return_value=photos_resp)
+    fake_api.get_activity = AsyncMock(return_value={"metadataDTO": {"activityImages": []}})
+
+    cache = PhotoCache(www_dir=tmp_path, account_short="abcd1234")
+    cache.download_records = AsyncMock(  # type: ignore[assignment]
+        return_value={"20000000-0000-4000-8000-000000000a01": {"medium"}}
+    )
+
+    data = await build_data(
+        api=fake_api,
+        current_user_date="2026-05-03",
+        previous_gear_last_modified={},
+        photo_cache=cache,
+        http_session=MagicMock(),
+        profile_id=999000111,
+        year=2026,
+    )
+    # Only the dives the GraphQL pass DIDN'T cover should be fallback-fetched.
+    fallback_aids = {call.kwargs["activity_id"] for call in fake_api.get_activity.call_args_list}
+    assert 99000001 not in fallback_aids
+    # Telemetry confirms the dive matched via activity-id.
+    assert data.photo_stats.matched_by_activity_id == 1
 
 
 async def test_coordinator_fires_new_dive_event(hass, fake_api):

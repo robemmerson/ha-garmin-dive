@@ -10,4 +10,4 @@ mypy>=1.20.2
 codespell>=2.4.2
 pre-commit>=4.6.0
 ha-garmin>=0.1.19,<0.2
-freezegun>=1.4
+freezegun>=1.5.5

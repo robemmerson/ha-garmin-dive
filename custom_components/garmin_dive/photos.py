@@ -48,6 +48,21 @@ class PhotoRecord:
             urls[size] = (url, ext)
         return cls(image_uuid=blob["imageUUID"], urls=urls)
 
+    @classmethod
+    def from_activity_image(cls, blob: dict[str, Any]) -> PhotoRecord:
+        """Convert a Connect /activity-service `activityImages[]` entry.
+
+        That endpoint flattens the per-size URLs into `smallUrl` / `mediumUrl`
+        / `url` (large) instead of the GraphQL `versionedUrls[]` shape.
+        """
+        urls: dict[str, tuple[str, str]] = {}
+        for size, key in (("thumb", "smallUrl"), ("medium", "mediumUrl"), ("large", "url")):
+            url = blob.get(key)
+            if not url:
+                continue
+            urls[size] = (url, _ext_from_url(url))
+        return cls(image_uuid=blob["imageId"], urls=urls)
+
 
 def _ext_from_url(url: str) -> str:
     m = re.search(r"\.([A-Za-z0-9]{2,5})(?:\?|$)", url)

@@ -42,8 +42,13 @@ async def async_get_config_entry_diagnostics(
             "videos_returned": ps.videos_returned,
             "other_returned": ps.other_returned,
             "matched_dives": ps.matched_dives,
+            "matched_by_activity_id": ps.matched_by_activity_id,
+            "matched_by_event_date": ps.matched_by_event_date,
             "unmatched_event_dates": ps.unmatched_event_dates,
             "download_failures": ps.download_failures,
+            "activity_fallback_attempted": ps.activity_fallback_attempted,
+            "activity_fallback_matched": ps.activity_fallback_matched,
+            "activity_fallback_errors": ps.activity_fallback_errors,
             "per_dive": [
                 {
                     "id": d.id,

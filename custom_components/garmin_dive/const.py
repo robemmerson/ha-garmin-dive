@@ -37,6 +37,7 @@ PATH_GRAPHQL: Final = "/diving/graphql/query"
 
 PATH_OAUTH_EXCHANGE: Final = "/oauth-service/oauth/exchange/user/2.0"
 PATH_SOCIAL_PROFILE_V2: Final = "/userprofile-service/socialProfile/v2"
+PATH_ACTIVITY: Final = "/activity-service/activity/{activity_id}"
 
 # --- diauth paths ------------------------------------------------------------
 

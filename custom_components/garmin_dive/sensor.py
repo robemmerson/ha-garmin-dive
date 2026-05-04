@@ -270,6 +270,7 @@ class DiveLogYearSensor(GarminDiveAccountEntity, SensorEntity):
             "gases": raw.get("gases") or [],
             "location": raw.get("entryLoc"),
             "photos": dict(d.photos),
+            "photos_all": [dict(p) for p in d.photos_all],
             "photo_count": d.photo_count,
             "connect_url": _connect_url(raw.get("connectActivityId")),
             "dive_computer": raw.get("activitySource"),

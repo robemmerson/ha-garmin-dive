@@ -1,0 +1,211 @@
+# Helpers for the Travel Story dashboard.
+#
+# Drop these alongside your other helpers (typically `!include`-ed from
+# configuration.yaml). They provide:
+#   • input_text.garmin_dive_hero_pins         JSON map of dest_key → image UUID
+#   • input_text.garmin_dive_selected_destination  current detail-page selection
+#   • script.garmin_dive_pin_hero              service that mutates the pin map
+#   • script.garmin_dive_select_destination    service that sets the selection
+#   • sensor.garmin_dive_destinations          single source of truth for the
+#                                              dashboard — groups every dive
+#                                              by (country, year), picks
+#                                              heroes, exposes per-trip rows.
+#
+# To install:
+#   input_text: !include inputs.yaml
+#   script: !include scripts.yaml
+#   template: !include templates.yaml
+# (or however you structure things — split as needed.)
+# ─────────────────────────────────────────────────────────────────────────────
+
+input_text:
+  garmin_dive_hero_pins:
+    name: Garmin Dive — hero pins (JSON)
+    icon: mdi:image-frame
+    initial: "{}"
+    max: 4096
+
+  garmin_dive_selected_destination:
+    name: Garmin Dive — selected destination
+    icon: mdi:map-marker
+    initial: ""
+    max: 64
+
+script:
+  garmin_dive_pin_hero:
+    alias: "Garmin Dive: pin destination hero"
+    fields:
+      destination_key:
+        description: e.g. thailand-2024
+        example: thailand-2024
+        required: true
+      image_uuid:
+        description: imageUUID from the photo (or "" to unpin)
+        example: f515da19-70dd-427e-9d23-5335acacd041
+        required: true
+    sequence:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.garmin_dive_hero_pins
+        data:
+          value: >-
+            {%- set raw = states('input_text.garmin_dive_hero_pins') | default('{}', true) -%}
+            {%- set pins = raw | from_json if raw else {} -%}
+            {%- if image_uuid and image_uuid | length > 0 -%}
+              {%- set _ = pins.update({destination_key: image_uuid}) -%}
+            {%- else -%}
+              {%- set _ = pins.pop(destination_key, none) -%}
+            {%- endif -%}
+            {{ pins | to_json }}
+
+  garmin_dive_select_destination:
+    alias: "Garmin Dive: select destination"
+    fields:
+      destination_key:
+        description: 'e.g. thailand-2024 ("" to clear)'
+        example: thailand-2024
+        required: true
+    sequence:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.garmin_dive_selected_destination
+        data:
+          value: "{{ destination_key }}"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Aggregator template sensor.
+#
+# The dashboard reads `state_attr('sensor.garmin_dive_destinations',
+# 'destinations')` to render its tile grid and `…attribute('selected')` for
+# the detail page. All grouping / TZ→country logic lives here, so the
+# dashboard cards stay slim.
+#
+# Edit `dive_country_by_tz` to extend the country map. Unmapped timezones
+# render as "Unknown — <tz>" so it's obvious where to add an entry.
+# ─────────────────────────────────────────────────────────────────────────────
+template:
+  - sensor:
+      - name: Garmin Dive Destinations
+        unique_id: garmin_dive_destinations
+        icon: mdi:map-marker-multiple
+        # State = number of distinct (country, year) trips.
+        state: >-
+          {{ this.attributes.destinations | length if this.attributes.destinations is defined else 0 }}
+
+        attributes:
+          # Edit me to add countries you've dived in. Unknown TZs render as
+          # "Unknown — <tz>" with the raw zone, so you'll know what to add.
+          tz_map: >-
+            {{
+              {
+                'Asia/Bangkok': 'Thailand',
+                'Asia/Manila': 'Philippines',
+                'Asia/Jakarta': 'Indonesia',
+                'Asia/Makassar': 'Indonesia',
+                'Asia/Jayapura': 'Indonesia',
+                'Asia/Singapore': 'Singapore',
+                'Asia/Kuala_Lumpur': 'Malaysia',
+                'Asia/Tokyo': 'Japan',
+                'Asia/Dubai': 'United Arab Emirates',
+                'Asia/Riyadh': 'Saudi Arabia',
+                'Asia/Colombo': 'Sri Lanka',
+                'Asia/Ho_Chi_Minh': 'Vietnam',
+                'Asia/Phnom_Penh': 'Cambodia',
+                'Asia/Yangon': 'Myanmar',
+                'Asia/Dhaka': 'Bangladesh',
+                'Asia/Hong_Kong': 'Hong Kong',
+                'Africa/Cairo': 'Egypt',
+                'Africa/Khartoum': 'Sudan',
+                'Africa/Johannesburg': 'South Africa',
+                'Africa/Nairobi': 'Kenya',
+                'Africa/Dar_es_Salaam': 'Tanzania',
+                'Africa/Casablanca': 'Morocco',
+                'Australia/Sydney': 'Australia',
+                'Australia/Melbourne': 'Australia',
+                'Australia/Perth': 'Australia',
+                'Australia/Brisbane': 'Australia',
+                'Australia/Darwin': 'Australia',
+                'Pacific/Truk': 'Micronesia',
+                'Pacific/Pohnpei': 'Micronesia',
+                'Pacific/Auckland': 'New Zealand',
+                'Pacific/Fiji': 'Fiji',
+                'Pacific/Honolulu': 'Hawaii',
+                'Pacific/Port_Moresby': 'Papua New Guinea',
+                'Pacific/Palau': 'Palau',
+                'America/Cancun': 'Mexico',
+                'America/Cayman': 'Cayman Islands',
+                'America/Belize': 'Belize',
+                'America/Costa_Rica': 'Costa Rica',
+                'America/Panama': 'Panama',
+                'America/Curacao': 'Curaçao',
+                'America/Barbados': 'Barbados',
+                'America/Nassau': 'Bahamas',
+                'Atlantic/Bermuda': 'Bermuda',
+                'Europe/Malta': 'Malta',
+                'Europe/Athens': 'Greece',
+                'Europe/Rome': 'Italy',
+                'Europe/London': 'United Kingdom',
+                'Europe/Paris': 'France',
+                'Europe/Madrid': 'Spain',
+                'Europe/Lisbon': 'Portugal',
+                'Indian/Maldives': 'Maldives',
+                'Indian/Mauritius': 'Mauritius',
+                'Indian/Mahe': 'Seychelles',
+                'Indian/Chagos': 'British Indian Ocean Territory'
+              } | to_json
+            }}
+
+          destinations: >-
+            {%- set tz_map = this.attributes.tz_map | from_json -%}
+            {%- set rob_id = 'sensor.garmin_dive_60bc41f5_d81c_4c75_adcb_7e9581ed44e3_dive_log_year' -%}
+            {%- set ana_id = 'sensor.garmin_dive_180ace30_1ef0_455e_bb55_4cefc6cc73e2_dive_log_year' -%}
+            {%- set rob = (state_attr(rob_id, 'dives') or []) | map('combine', {'_who': 'rob'}) | list -%}
+            {%- set ana = (state_attr(ana_id, 'dives') or []) | map('combine', {'_who': 'ana'}) | list -%}
+            {%- set all = rob + ana -%}
+            {%- set hero_pins_raw = states('input_text.garmin_dive_hero_pins') | default('{}', true) -%}
+            {%- set hero_pins = hero_pins_raw | from_json if hero_pins_raw else {} -%}
+            {%- set ns = namespace(groups={}) -%}
+            {%- for d in all if d.start is defined -%}
+              {%- set tz = d.timezone or 'unknown' -%}
+              {%- set country = tz_map.get(tz, 'Unknown — ' ~ tz) -%}
+              {%- set year = (d.start | string)[:4] -%}
+              {%- set key = (country | lower | replace(' ', '-') | replace('—', '') | replace('--', '-')) ~ '-' ~ year -%}
+              {%- set existing = ns.groups.get(key, {'country': country, 'year': year, 'key': key, 'tz': tz, 'dives': []}) -%}
+              {%- set _ = existing.dives.append(d) -%}
+              {%- set _ = ns.groups.update({key: existing}) -%}
+            {%- endfor -%}
+            {%- set rows = [] -%}
+            {%- for g in ns.groups.values() | sort(attribute='country') | sort(attribute='year', reverse=true) -%}
+              {%- set rob_n = g.dives | selectattr('_who', 'eq', 'rob') | list | length -%}
+              {%- set ana_n = g.dives | selectattr('_who', 'eq', 'ana') | list | length -%}
+              {%- set pinned_uuid = hero_pins.get(g.key) -%}
+              {%- set hero = namespace(url=none) -%}
+              {%- if pinned_uuid -%}
+                {%- for d in g.dives -%}
+                  {%- for p in (d.photos_all or []) if not hero.url -%}
+                    {%- if pinned_uuid in (p.medium or '') -%}{%- set hero.url = p.medium -%}{%- endif -%}
+                  {%- endfor -%}
+                {%- endfor -%}
+              {%- endif -%}
+              {%- if not hero.url -%}
+                {%- for d in g.dives if not hero.url -%}
+                  {%- for p in (d.photos_all or []) if not hero.url -%}
+                    {%- if p.medium -%}{%- set hero.url = p.medium -%}{%- endif -%}
+                  {%- endfor -%}
+                  {%- if not hero.url and d.photos and d.photos.medium -%}
+                    {%- set hero.url = d.photos.medium -%}
+                  {%- endif -%}
+                {%- endfor -%}
+              {%- endif -%}
+              {%- set _ = rows.append({
+                  'key': g.key,
+                  'country': g.country,
+                  'year': g.year,
+                  'tz': g.tz,
+                  'dive_count': g.dives | length,
+                  'rob_count': rob_n,
+                  'ana_count': ana_n,
+                  'hero_url': hero.url
+              }) -%}
+            {%- endfor -%}
+            {{ rows | to_json }}

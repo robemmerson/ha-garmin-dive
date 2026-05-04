@@ -1,0 +1,248 @@
+# Travel Story dashboard for ha-garmin-dive.
+#
+# Single Lovelace view with two states (toggled by
+# `input_text.garmin_dive_selected_destination`):
+#   • empty   → grid of country+year hero tiles.
+#   • set     → destination detail (hero, dive list, combined photo album,
+#                "← all destinations" link).
+#
+# Required helpers + sensor: see helpers.yaml in this folder.
+# Required HACS cards:        auto-entities, mushroom, card-mod.
+# Required integration:       ha-garmin-dive >= 0.3.5 (PR #33 merged).
+#
+# Edit the two `*_DIVE_LOG_SENSOR` template constants below if your entity
+# IDs differ.
+# ─────────────────────────────────────────────────────────────────────────────
+
+title: Diving
+icon: mdi:diving-scuba
+cards:
+  # ───────────  GRID  ─ visible when nothing is selected  ─────────────────
+  - type: conditional
+    conditions:
+      - condition: state
+        entity: input_text.garmin_dive_selected_destination
+        state: ""
+    card:
+      type: vertical-stack
+      cards:
+        - type: markdown
+          content: >
+            <div style="font-size:28px;font-weight:700;padding:14px 8px 4px 8px;">
+              🌍 Where we&rsquo;ve been diving
+            </div>
+            <div style="opacity:.65;padding:0 8px 12px 8px;font-size:13px;">
+              Tap a destination to see its dives and photo album.
+            </div>
+
+        - type: conditional
+          conditions:
+            - condition: numeric_state
+              entity: sensor.garmin_dive_destinations
+              below: 1
+          card:
+            type: markdown
+            content: >
+              <div style="text-align:center;padding:32px;color:var(--secondary-text-color);font-size:13px;">
+                No destinations yet — once your dives have a timezone Home Assistant
+                recognises, trips will appear here.
+              </div>
+
+        - type: custom:auto-entities
+          card:
+            type: grid
+            columns: 2
+            square: false
+          card_param: cards
+          filter:
+            template: >
+              {%- set rows = state_attr('sensor.garmin_dive_destinations', 'destinations') or [] -%}
+              [
+              {%- for g in rows -%}
+                {
+                  "type": "custom:mushroom-template-card",
+                  "primary": "{{ g.country }}",
+                  "secondary": "{{ g.year }} · {{ g.dive_count }} dive{{ '' if g.dive_count == 1 else 's' }} · 🤿 {{ g.rob_count }} · 🐠 {{ g.ana_count }}",
+                  "icon": "mdi:diving-scuba",
+                  "icon_color": "white",
+                  "tap_action": {
+                    "action": "perform-action",
+                    "perform_action": "script.garmin_dive_select_destination",
+                    "data": { "destination_key": "{{ g.key }}" }
+                  },
+                  "card_mod": {
+                    "style": "ha-card { height: 160px; color: white; background: {% if g.hero_url %}linear-gradient(rgba(0,0,30,.45),rgba(0,0,30,.7)), url('{{ g.hero_url }}') center/cover no-repeat{% else %}linear-gradient(135deg,#0a4870 0%,#1e88e5 60%,#22d3ee 100%){% endif %}; box-shadow: 0 2px 6px rgba(0,0,0,.25); cursor: pointer; transition: transform .15s ease; } ha-card:hover { transform: translateY(-2px); } mushroom-state-info $: .primary { font-size: 22px; font-weight: 800; letter-spacing: .3px; } .secondary { color: rgba(255,255,255,.88); font-size: 13px; }"
+                  }
+                }{{ "," if not loop.last else "" }}
+              {%- endfor -%}
+              ]
+
+  # ───────────  DETAIL  ─ visible when a destination is selected  ─────────
+  - type: conditional
+    conditions:
+      - condition: state
+        entity: input_text.garmin_dive_selected_destination
+        state_not: ""
+    card:
+      type: vertical-stack
+      cards:
+        # Back-to-grid affordance.
+        - type: custom:mushroom-template-card
+          primary: "← All destinations"
+          icon: mdi:arrow-left
+          tap_action:
+            action: perform-action
+            perform_action: script.garmin_dive_select_destination
+            data:
+              destination_key: ""
+          card_mod:
+            style: |
+              ha-card {
+                background: var(--card-background-color);
+                cursor: pointer;
+                margin: 0 0 4px 0;
+              }
+              ha-card:hover { background: var(--secondary-background-color); }
+
+        # Hero header.
+        - type: markdown
+          content: >
+            {%- set sel = states('input_text.garmin_dive_selected_destination') -%}
+            {%- set rows = state_attr('sensor.garmin_dive_destinations', 'destinations') or [] -%}
+            {%- set g = (rows | selectattr('key','eq',sel) | list | first) or {} -%}
+            <div style="position:relative;border-radius:14px;overflow:hidden;height:200px;{% if g.hero_url %}background:linear-gradient(rgba(0,0,30,.35),rgba(0,0,30,.75)),url('{{ g.hero_url }}') center/cover no-repeat;{% else %}background:linear-gradient(135deg,#0a4870 0%,#1e88e5 60%,#22d3ee 100%);{% endif %}color:white;">
+              <div style="position:absolute;bottom:0;left:0;right:0;padding:16px;">
+                <div style="font-size:34px;font-weight:800;line-height:1.1;letter-spacing:.4px;">{{ g.country or '—' }}</div>
+                <div style="font-size:18px;opacity:.9;margin-top:2px;">{{ g.year or '' }}</div>
+                <div style="font-size:13px;opacity:.85;margin-top:6px;">
+                  {{ g.dive_count or 0 }} dive{{ '' if (g.dive_count or 0) == 1 else 's' }} · 🤿 Rob {{ g.rob_count or 0 }} · 🐠 Ana {{ g.ana_count or 0 }}
+                </div>
+              </div>
+            </div>
+
+        # Per-dive table.
+        - type: markdown
+          content: >
+            {%- set sel = states('input_text.garmin_dive_selected_destination') -%}
+            {%- set tz_map = state_attr('sensor.garmin_dive_destinations', 'tz_map') | from_json -%}
+            {%- set rob_id = 'sensor.garmin_dive_60bc41f5_d81c_4c75_adcb_7e9581ed44e3_dive_log_year' -%}
+            {%- set ana_id = 'sensor.garmin_dive_180ace30_1ef0_455e_bb55_4cefc6cc73e2_dive_log_year' -%}
+            {%- set rob = (state_attr(rob_id, 'dives') or []) | map('combine', {'_who': 'rob'}) | list -%}
+            {%- set ana = (state_attr(ana_id, 'dives') or []) | map('combine', {'_who': 'ana'}) | list -%}
+            {%- set all = rob + ana -%}
+            {%- set rows = [] -%}
+            {%- for d in all if d.start is defined -%}
+              {%- set tz = d.timezone or 'unknown' -%}
+              {%- set country = tz_map.get(tz, 'Unknown — ' ~ tz) -%}
+              {%- set year = (d.start | string)[:4] -%}
+              {%- set key = (country | lower | replace(' ', '-') | replace('—', '') | replace('--', '-')) ~ '-' ~ year -%}
+              {%- if key == sel -%}{% set _ = rows.append(d) %}{%- endif -%}
+            {%- endfor -%}
+            {%- set rows = rows | sort(attribute='start') -%}
+            <div style="font-weight:700;font-size:13px;padding:12px 4px 4px 4px;opacity:.6;letter-spacing:.8px;">DIVES</div>
+            <table style="width:100%;border-collapse:collapse;">
+            {%- for d in rows -%}
+              {%- set thumb = none -%}
+              {%- if d.photos_all and d.photos_all|length > 0 -%}{% set thumb = (d.photos_all[0].thumb or d.photos_all[0].medium) %}{%- endif -%}
+              {%- if not thumb and d.photos -%}{% set thumb = d.photos.thumb or d.photos.medium %}{%- endif -%}
+              {%- set who_icon = '🤿' if d._who == 'rob' else '🐠' -%}
+              <tr style="border-bottom:1px solid var(--divider-color);">
+                <td style="width:64px;padding:8px 4px 8px 6px;vertical-align:middle;">
+                  <div style="width:56px;height:56px;border-radius:8px;background:linear-gradient(135deg,#0a4870 0%,#1e88e5 60%,#22d3ee 100%);overflow:hidden;">
+                    {% if thumb %}<img src="{{ thumb }}" style="width:56px;height:56px;object-fit:cover;display:block;">{% else %}<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:24px;opacity:.85;">🌊</div>{% endif %}
+                  </div>
+                </td>
+                <td style="padding:8px 6px;vertical-align:middle;">
+                  <a href="{{ d.connect_url or '#' }}" target="_blank" rel="noopener" style="color:var(--primary-text-color);text-decoration:none;font-weight:600;font-size:14px;">{{ d.name }}</a>
+                  <div style="font-size:11px;color:var(--secondary-text-color);margin-top:2px;">
+                    {{ who_icon }} {{ (d.start | as_datetime).strftime('%-d %b') }}
+                    {%- if d.tags %} · {{ d.tags[:2] | map('replace', '_', ' ') | map('lower') | map('capitalize') | join(' · ') }}{% if d.tags|length > 2 %} +{{ d.tags|length - 2 }}{% endif %}{% endif %}
+                  </div>
+                </td>
+                <td style="padding:8px 4px;vertical-align:middle;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">
+                  <div style="font-size:13px;font-weight:600;">{{ '%.1f'|format(d.max_depth or 0) }} m</div>
+                  <div style="font-size:11px;color:var(--secondary-text-color);">{{ '%.0f'|format(d.bottom_time or 0) }} min</div>
+                </td>
+              </tr>
+            {%- endfor -%}
+            </table>
+
+        # Combined photo album.
+        - type: markdown
+          content: >
+            <div style="font-weight:700;font-size:13px;padding:18px 4px 6px 4px;opacity:.6;letter-spacing:.8px;">PHOTO ALBUM</div>
+
+        - type: custom:auto-entities
+          card:
+            type: grid
+            columns: 3
+            square: true
+          card_param: cards
+          filter:
+            template: >
+              {%- set sel = states('input_text.garmin_dive_selected_destination') -%}
+              {%- set tz_map = state_attr('sensor.garmin_dive_destinations', 'tz_map') | from_json -%}
+              {%- set rob_id = 'sensor.garmin_dive_60bc41f5_d81c_4c75_adcb_7e9581ed44e3_dive_log_year' -%}
+              {%- set ana_id = 'sensor.garmin_dive_180ace30_1ef0_455e_bb55_4cefc6cc73e2_dive_log_year' -%}
+              {%- set rob = state_attr(rob_id, 'dives') or [] -%}
+              {%- set ana = state_attr(ana_id, 'dives') or [] -%}
+              {%- set all = rob + ana -%}
+              {%- set ns = namespace(photos=[], seen=[]) -%}
+              {%- for d in all if d.start is defined -%}
+                {%- set tz = d.timezone or 'unknown' -%}
+                {%- set country = tz_map.get(tz, 'Unknown — ' ~ tz) -%}
+                {%- set year = (d.start | string)[:4] -%}
+                {%- set key = (country | lower | replace(' ', '-') | replace('—', '') | replace('--', '-')) ~ '-' ~ year -%}
+                {%- if key == sel -%}
+                  {%- for p in (d.photos_all or []) -%}
+                    {%- if p.medium and p.medium not in ns.seen -%}
+                      {%- set _ = ns.seen.append(p.medium) -%}
+                      {%- set _ = ns.photos.append({'thumb': p.thumb or p.medium, 'medium': p.medium, 'large': p.large or p.medium, 'name': d.name}) -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+                  {%- if not (d.photos_all and d.photos_all|length > 0) and d.photos and d.photos.medium and d.photos.medium not in ns.seen -%}
+                    {%- set _ = ns.seen.append(d.photos.medium) -%}
+                    {%- set _ = ns.photos.append({'thumb': d.photos.thumb or d.photos.medium, 'medium': d.photos.medium, 'large': d.photos.large or d.photos.medium, 'name': d.name}) -%}
+                  {%- endif -%}
+                {%- endif -%}
+              {%- endfor -%}
+              [
+              {%- for p in ns.photos -%}
+                {
+                  "type": "picture",
+                  "image": "{{ p.medium }}",
+                  "card_mod": {
+                    "style": "ha-card { border-radius: 8px; overflow: hidden; aspect-ratio: 1/1; cursor: zoom-in; transition: transform .15s ease; } ha-card:hover { transform: scale(1.02); } ha-card img { width: 100%; height: 100%; object-fit: cover; }"
+                  }
+                }{{ "," if not loop.last else "" }}
+              {%- endfor -%}
+              ]
+
+        # Empty-state for the album.
+        - type: conditional
+          conditions:
+            - condition: template
+              value_template: >
+                {%- set sel = states('input_text.garmin_dive_selected_destination') -%}
+                {%- set tz_map = state_attr('sensor.garmin_dive_destinations', 'tz_map') | from_json -%}
+                {%- set rob_id = 'sensor.garmin_dive_60bc41f5_d81c_4c75_adcb_7e9581ed44e3_dive_log_year' -%}
+                {%- set ana_id = 'sensor.garmin_dive_180ace30_1ef0_455e_bb55_4cefc6cc73e2_dive_log_year' -%}
+                {%- set all = (state_attr(rob_id, 'dives') or []) + (state_attr(ana_id, 'dives') or []) -%}
+                {%- set count = namespace(n=0) -%}
+                {%- for d in all if d.start is defined -%}
+                  {%- set tz = d.timezone or 'unknown' -%}
+                  {%- set country = tz_map.get(tz, 'Unknown — ' ~ tz) -%}
+                  {%- set year = (d.start | string)[:4] -%}
+                  {%- set key = (country | lower | replace(' ', '-') | replace('—', '') | replace('--', '-')) ~ '-' ~ year -%}
+                  {%- if key == sel -%}
+                    {%- for p in (d.photos_all or []) if p.medium -%}{% set count.n = count.n + 1 %}{%- endfor -%}
+                  {%- endif -%}
+                {%- endfor -%}
+                {{ count.n == 0 }}
+          card:
+            type: markdown
+            content: >
+              <div style="text-align:center;padding:24px;color:var(--secondary-text-color);font-size:13px;">
+                No photos yet for this trip — Garmin may still be processing them,
+                or photos_all hasn't populated yet (try the Refresh button or wait a cycle).
+              </div>

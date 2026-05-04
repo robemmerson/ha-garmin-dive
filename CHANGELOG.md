@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.3](https://github.com/robemmerson/ha-garmin-dive/compare/v0.3.2...v0.3.3) (2026-05-04)
+
+
+### Bug Fixes
+
+* **photos:** tolerate per-photo failures and surface only verified URLs ([9baaef6](https://github.com/robemmerson/ha-garmin-dive/commit/9baaef6bdaa0b7a61d717bd760a06ae8a79d9226))
+* **photos:** tolerate per-photo failures and surface only verified URLs ([511611c](https://github.com/robemmerson/ha-garmin-dive/commit/511611c5991051a0fa9193adc96836dfeddd6e91))
+
 ## [0.3.2](https://github.com/robemmerson/ha-garmin-dive/compare/v0.3.1...v0.3.2) (2026-05-03)
 
 

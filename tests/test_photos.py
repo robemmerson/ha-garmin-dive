@@ -55,10 +55,44 @@ async def test_download_records_writes_files_idempotently(
     )
     async with aiohttp.ClientSession() as session:
         cache = PhotoCache(www_dir=tmp_path, account_short="abcd1234")
-        await cache.download_records([record], session=session)
+        result = await cache.download_records([record], session=session)
     f = tmp_path / "garmin_dive" / "abcd1234" / "fixture-aaa_medium.jpeg"
     assert f.exists()
     assert f.read_bytes().startswith(b"\xff\xd8\xff")
+    assert result == {"fixture-aaa": {"medium"}}
+
+
+async def test_download_records_one_failure_does_not_abort_others(
+    aresponses: ResponsesMockServer, tmp_path: Path
+):
+    """A 500 on one photo must not stop other photos from being written."""
+    aresponses.add(
+        "example.invalid",
+        "/good.jpeg",
+        "GET",
+        aresponses.Response(status=200, body=b"\xff\xd8\xffOK"),
+    )
+    aresponses.add(
+        "example.invalid",
+        "/bad.jpeg",
+        "GET",
+        aresponses.Response(status=500, body=b"oops"),
+    )
+    good = PhotoRecord(
+        image_uuid="good-uuid",
+        urls={"medium": ("https://example.invalid/good.jpeg", "jpeg")},
+    )
+    bad = PhotoRecord(
+        image_uuid="bad-uuid",
+        urls={"medium": ("https://example.invalid/bad.jpeg", "jpeg")},
+    )
+    async with aiohttp.ClientSession() as session:
+        cache = PhotoCache(www_dir=tmp_path, account_short="abcd1234")
+        result = await cache.download_records([good, bad], session=session)
+    assert result["good-uuid"] == {"medium"}
+    assert result["bad-uuid"] == set()
+    assert (tmp_path / "garmin_dive" / "abcd1234" / "good-uuid_medium.jpeg").exists()
+    assert not (tmp_path / "garmin_dive" / "abcd1234" / "bad-uuid_medium.jpeg").exists()
 
 
 async def test_download_records_skips_existing(tmp_path: Path):
@@ -75,8 +109,9 @@ async def test_download_records_skips_existing(tmp_path: Path):
     # No aresponses registration — if HTTP is hit, the test fails because
     # aresponses errors on unmocked calls.
     async with aiohttp.ClientSession() as session:
-        await cache.download_records([record], session=session)
+        result = await cache.download_records([record], session=session)
     assert target.read_bytes() == b"existing"
+    assert result == {"uuid": {"medium"}}
 
 
 def test_extract_records_from_garmin_image_blob():

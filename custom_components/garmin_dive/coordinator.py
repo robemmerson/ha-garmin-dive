@@ -98,6 +98,18 @@ class GearItem:
 
 
 @dataclass(slots=True)
+class PhotoStats:
+    """Per-refresh telemetry for the dive-photo pipeline (debug visibility)."""
+
+    images_returned: int = 0
+    videos_returned: int = 0
+    other_returned: int = 0
+    matched_dives: int = 0
+    unmatched_event_dates: list[str] = field(default_factory=list)
+    download_failures: list[str] = field(default_factory=list)
+
+
+@dataclass(slots=True)
 class CoordinatorData:
     total_dives: int
     dives: list[Dive]
@@ -105,6 +117,7 @@ class CoordinatorData:
     dive_tags: dict[str, int]
     gear: list[GearItem]
     gear_snapshot: GearSnapshot = field(default_factory=GearSnapshot)
+    photo_stats: PhotoStats = field(default_factory=PhotoStats)
 
 
 async def build_data(
@@ -156,22 +169,39 @@ async def build_data(
     dives = [Dive(raw=d) for d in summary["diveActivities"]]
 
     # Photo collection (optional path)
+    photo_stats = PhotoStats()
     if photo_cache is not None and http_session is not None:
         records = list(_collect_gear_photo_records(gear_items))
         photos_by_event: dict[str, list[PhotoRecord]] = {}
         if profile_id is not None and year is not None:
             try:
                 photos_resp = await api.get_dive_photos(profile_id=profile_id, year=year)
-                photos_by_event = _build_dive_photo_index(photos_resp)
+                photos_by_event = _build_dive_photo_index(photos_resp, stats=photo_stats)
                 for recs in photos_by_event.values():
                     records.extend(recs)
             except Exception as err:  # pragma: no cover - logged
                 _LOGGER.warning("Dive-photos GraphQL call failed: %s", err)
+        cached_by_uuid: dict[str, set[str]] = {}
         if records:
-            await photo_cache.download_records(records, session=http_session)
-            _attach_local_urls(gear_items, photo_cache)
+            cached_by_uuid = await photo_cache.download_records(records, session=http_session)
+            _attach_local_urls(gear_items, photo_cache, cached_by_uuid)
+            photo_stats.download_failures = sorted(
+                uuid for uuid, sizes in cached_by_uuid.items() if not sizes
+            )
         if photos_by_event:
-            _attach_dive_photos(dives, photos_by_event, photo_cache)
+            _attach_dive_photos(
+                dives, photos_by_event, photo_cache, cached_by_uuid, stats=photo_stats
+            )
+        _LOGGER.info(
+            "Garmin Dive photos: returned=%d images / %d videos / %d other; "
+            "matched=%d dives; unmatched event_dates=%d; download_failures=%d",
+            photo_stats.images_returned,
+            photo_stats.videos_returned,
+            photo_stats.other_returned,
+            photo_stats.matched_dives,
+            len(photo_stats.unmatched_event_dates),
+            len(photo_stats.download_failures),
+        )
 
     # Capture the snapshot used as `previous` on the next cycle.
     snapshot = GearSnapshot(
@@ -190,6 +220,7 @@ async def build_data(
         dive_tags=tags,
         gear=gear_items,
         gear_snapshot=snapshot,
+        photo_stats=photo_stats,
     )
 
 
@@ -205,14 +236,27 @@ def _collect_gear_photo_records(gear_items: list[GearItem]) -> Iterator[PhotoRec
                 yield PhotoRecord.from_garmin_image(img)
 
 
-def _build_dive_photo_index(graphql_resp: dict[str, Any]) -> dict[str, list[PhotoRecord]]:
-    """Group dive photos by `eventDate` (matches each dive's `startTime`)."""
+def _build_dive_photo_index(
+    graphql_resp: dict[str, Any], *, stats: PhotoStats
+) -> dict[str, list[PhotoRecord]]:
+    """Group dive photos by `eventDate` (matches each dive's `startTime`).
+
+    Records skipped/non-Image entries are folded into `stats` so callers can
+    surface per-refresh telemetry.
+    """
     by_event: dict[str, list[PhotoRecord]] = {}
     items = (
         graphql_resp.get("data", {}).get("playerProfile", {}).get("medias", {}).get("content") or []
     )
     for item in items:
-        if item.get("__typename") != "Image":
+        typename = item.get("__typename")
+        if typename == "Image":
+            stats.images_returned += 1
+        elif typename == "Video":
+            stats.videos_returned += 1
+            continue
+        else:
+            stats.other_returned += 1
             continue
         event_date = item.get("eventDate")
         if not event_date or not item.get("imageUUID"):
@@ -225,11 +269,16 @@ def _attach_dive_photos(
     dives: list[Dive],
     by_event: dict[str, list[PhotoRecord]],
     cache: PhotoCache,
+    cached_by_uuid: dict[str, set[str]],
+    *,
+    stats: PhotoStats,
 ) -> None:
-    """Attach the first photo's local URLs to each matching dive.
+    """Attach local URLs for the first cached photo of each matching dive.
 
     Matching is on parsed datetimes so equivalent ISO strings (e.g. `+0300`
-    vs `+03:00`) still match. `photo_count` exposes the full per-dive total.
+    vs `+03:00`) still match. URLs are only surfaced for sizes that are
+    actually on disk, so the dashboard never gets a 404'ing `<img>` src.
+    `dive.photo_count` reflects the matched-photo count regardless.
     """
     parsed_events: dict[datetime, str] = {}
     for ev_str in by_event:
@@ -237,6 +286,7 @@ def _attach_dive_photos(
             parsed_events[datetime.fromisoformat(ev_str)] = ev_str
         except ValueError:
             continue
+    matched_event_dates: set[str] = set()
     for dive in dives:
         try:
             dive_dt = datetime.fromisoformat(dive.start_time)
@@ -245,33 +295,51 @@ def _attach_dive_photos(
         match = parsed_events.get(dive_dt)
         if match is None:
             continue
+        matched_event_dates.add(match)
         records = by_event[match]
         if not records:
             continue
         dive.photo_count = len(records)
-        first = records[0]
+        # Pick the first record that has *any* size cached on disk so the
+        # dashboard has a real URL to render.
+        renderable = next(
+            (r for r in records if cached_by_uuid.get(r.image_uuid)),
+            None,
+        )
+        if renderable is None:
+            continue
+        cached_sizes = cached_by_uuid[renderable.image_uuid]
         urls: dict[str, str | None] = _empty_photos()
         for size in ("thumb", "medium", "large"):
-            entry = first.urls.get(size)
+            if size not in cached_sizes:
+                continue
+            entry = renderable.urls.get(size)
             if entry is None:
                 continue
             _, ext = entry
-            urls[size] = cache.local_url(image_uuid=first.image_uuid, size=size, ext=ext)
+            urls[size] = cache.local_url(image_uuid=renderable.image_uuid, size=size, ext=ext)
         dive.photos = urls
+    stats.matched_dives = sum(1 for d in dives if d.photo_count > 0)
+    stats.unmatched_event_dates = sorted(set(by_event) - matched_event_dates)
 
 
-def _attach_local_urls(gear_items: list[GearItem], cache: PhotoCache) -> None:
+def _attach_local_urls(
+    gear_items: list[GearItem],
+    cache: PhotoCache,
+    cached_by_uuid: dict[str, set[str]],
+) -> None:
     for g in gear_items:
         img = g.summary_raw.get("image") or _first_image(g.detail_raw)
         if not img:
             continue
         record = PhotoRecord.from_garmin_image(img)
-        if "medium" in record.urls:
+        cached_sizes = cached_by_uuid.get(record.image_uuid, set())
+        if "medium" in record.urls and "medium" in cached_sizes:
             _, ext = record.urls["medium"]
             g.photo_local_url = cache.local_url(
                 image_uuid=record.image_uuid, size="medium", ext=ext
             )
-        if "thumb" in record.urls:
+        if "thumb" in record.urls and "thumb" in cached_sizes:
             _, ext = record.urls["thumb"]
             g.photo_thumb_url = cache.local_url(image_uuid=record.image_uuid, size="thumb", ext=ext)
 

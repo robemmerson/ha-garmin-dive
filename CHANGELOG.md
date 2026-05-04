@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.6](https://github.com/robemmerson/ha-garmin-dive/compare/v0.3.5...v0.3.6) (2026-05-04)
+
+
+### Bug Fixes
+
+* **photos:** match by activity ID + activity-service fallback + all photos ([6990742](https://github.com/robemmerson/ha-garmin-dive/commit/699074221129bdbf7c53ddded3cdc05ac10c6651))
+* **photos:** match by activity ID, activity-service fallback, surface all photos ([bc89423](https://github.com/robemmerson/ha-garmin-dive/commit/bc89423c1772d7bd0be55859ab990a447a4898a9))
+
 ## [0.3.5](https://github.com/robemmerson/ha-garmin-dive/compare/v0.3.4...v0.3.5) (2026-05-04)
 
 

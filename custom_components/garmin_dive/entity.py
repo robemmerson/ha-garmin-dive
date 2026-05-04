@@ -45,12 +45,21 @@ class GarminDiveSubDeviceEntity(CoordinatorEntity["GarminDiveCoordinator"]):
         model: str | None = None,
         serial_number: str | None = None,
         entity_picture: str | None = None,
+        alias_sub_device_ids: tuple[str, ...] = (),
     ) -> None:
         super().__init__(coordinator)
         self._account_id = str(coordinator._auth.profile_id)
         self._sub_device_id = sub_device_id
+        # When a single physical item is exposed by Garmin via two endpoints
+        # (e.g. a Descent computer in both /dive/devices and /gear), every
+        # entity for it lists every identifier so HA merges the two device
+        # registry rows into one. See issue #18.
+        identifiers = {(DOMAIN, f"{self._account_id}:{sub_device_id}")}
+        identifiers.update(
+            (DOMAIN, f"{self._account_id}:{alias}") for alias in alias_sub_device_ids
+        )
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{self._account_id}:{sub_device_id}")},
+            identifiers=identifiers,
             via_device=(DOMAIN, self._account_id),
             name=sub_device_name,
             manufacturer=manufacturer,

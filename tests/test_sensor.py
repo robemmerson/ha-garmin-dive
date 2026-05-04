@@ -204,3 +204,68 @@ async def test_dive_computer_sub_devices(hass, load_fixture):
     serials = {e._serial for e in entities if hasattr(e, "_serial") and e._serial}
     assert "1000000001" in serials
     assert "1000000002" in serials
+
+
+async def test_descent_in_both_lists_yields_one_device(hass, load_fixture):
+    """Issue #18: a Descent shows up in /dive/devices AND /gear, and Garmin's
+    serial fields match. The integration must surface this as ONE HA device
+    that carries both gear-derived and computer-derived sensors."""
+    serial = "1000000099"
+    gear_summary = [
+        {
+            "gearId": 555001,
+            "name": "Descent T1",
+            "type": "TRANSMITTER",
+            "dateOfFirstUse": "2022-01-01",
+            "status": "ACTIVE",
+            "creationTs": "2022-01-01T00:00:00Z",
+            "lastModifiedTs": "2023-01-01T00:00:00Z",
+            "stats": {"numAssociatedDives": 36, "totalAssociatedDiveTime": 108558.86},
+        }
+    ]
+    gear_details = {
+        555001: {
+            "gearId": 555001,
+            "name": "Descent T1",
+            "type": "TRANSMITTER",
+            "brand": "Garmin",
+            "model": "Descent T1",
+            "serialNumber": serial,
+            "purchaseDate": "2022-01-01",
+            "stats": {"numAssociatedDives": 36, "totalAssociatedDiveTime": 108558.86},
+        }
+    }
+    devices = [
+        {
+            "imageUrl": "https://example.invalid/t1.png",
+            "productDisplayName": "Descent T1",
+            "serialNumber": int(serial),
+            "antChannelId": 10100200,
+            "type": "TRANSMITTER",
+            "gearTrackingStatus": "TRACKED",
+            "deviceDismissed": False,
+        }
+    ]
+    data = make_data(
+        summary=load_fixture("dive_summary_full"),
+        devices=devices,
+        gear_summary=gear_summary,
+        gear_details=gear_details,
+    )
+    coord = make_fake_coordinator(hass=hass, data=data)
+
+    entities = build_gear_entities(coord) + build_dive_computer_entities(coord)
+    descent_entities = [
+        e for e in entities if "555001" in (e.unique_id or "") or serial in (e.unique_id or "")
+    ]
+    assert descent_entities, "expected entities for the Descent T1"
+
+    # Every entity for the Descent must hang off the SAME HA device (i.e. the
+    # set of identifier-tuples on each entity's device_info must overlap with
+    # all others), so HA's device registry merges them into a single entry.
+    identifier_sets = [frozenset(e.device_info["identifiers"]) for e in descent_entities]
+    common = set.intersection(*(set(s) for s in identifier_sets))
+    assert common, (
+        "Descent T1 entities point at disjoint device identifiers — "
+        f"HA will create duplicate devices. Sets: {identifier_sets}"
+    )

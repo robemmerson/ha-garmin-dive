@@ -77,16 +77,33 @@ class PhotoCache:
         records: list[PhotoRecord],
         *,
         session: aiohttp.ClientSession,
-    ) -> None:
-        await asyncio.gather(
-            *(self._download_one(r, session=session) for r in records),
-            return_exceptions=False,
-        )
+    ) -> dict[str, set[str]]:
+        """Download each record's sizes and return per-uuid set of cached sizes.
 
-    async def _download_one(self, record: PhotoRecord, *, session: aiohttp.ClientSession) -> None:
+        Result maps `image_uuid -> {sizes that exist on disk after this call}`.
+        Always tolerant: a single failure never aborts the rest of the batch.
+        """
+        results = await asyncio.gather(
+            *(self._download_one(r, session=session) for r in records),
+            return_exceptions=True,
+        )
+        cached: dict[str, set[str]] = {}
+        for record, outcome in zip(records, results, strict=True):
+            if isinstance(outcome, BaseException):
+                _LOGGER.warning("Photo download crashed for %s: %s", record.image_uuid, outcome)
+                cached[record.image_uuid] = set()
+                continue
+            cached[record.image_uuid] = outcome
+        return cached
+
+    async def _download_one(
+        self, record: PhotoRecord, *, session: aiohttp.ClientSession
+    ) -> set[str]:
+        cached_sizes: set[str] = set()
         for size, (url, ext) in record.urls.items():
             target = self.resolve_path(image_uuid=record.image_uuid, size=size, ext=ext)
             if await asyncio.to_thread(target.exists):
+                cached_sizes.add(size)
                 continue
             await asyncio.to_thread(target.parent.mkdir, parents=True, exist_ok=True)
             async with self._semaphore:
@@ -95,10 +112,13 @@ class PhotoCache:
                         resp.raise_for_status()
                         data = await resp.read()
                     await asyncio.to_thread(target.write_bytes, data)
-                except aiohttp.ClientError as err:  # pragma: no cover - logged
+                except (aiohttp.ClientError, TimeoutError, OSError) as err:
                     _LOGGER.warning(
                         "Failed to download photo %s/%s: %s",
                         record.image_uuid,
                         size,
                         err,
                     )
+                    continue
+                cached_sizes.add(size)
+        return cached_sizes

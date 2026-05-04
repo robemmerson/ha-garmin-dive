@@ -81,6 +81,7 @@ async def test_build_data_with_photos_collects_gear_images(fake_api, tmp_path, l
 
     async def fake_download(records, *, session):
         downloaded.extend(r.image_uuid for r in records)
+        return {r.image_uuid: {"thumb", "medium", "large"} for r in records}
 
     cache.download_records = fake_download  # type: ignore[assignment]
 
@@ -104,7 +105,8 @@ async def test_build_data_attaches_dive_photos_by_event_date(fake_api, tmp_path,
     cache = PhotoCache(www_dir=tmp_path, account_short="abcd1234")
 
     async def fake_download(records, *, session):
-        return None
+        # Pretend every photo's three sizes landed on disk.
+        return {r.image_uuid: {"thumb", "medium", "large"} for r in records}
 
     cache.download_records = fake_download  # type: ignore[assignment]
 
@@ -130,6 +132,43 @@ async def test_build_data_attaches_dive_photos_by_event_date(fake_api, tmp_path,
     no_photo_dive = next(d for d in data.dives if d.id == 10000002)
     assert no_photo_dive.photo_count == 0
     assert no_photo_dive.photos == {"thumb": None, "medium": None, "large": None}
+    # Telemetry: 3 Image entries, 1 Video; matched 2 dives; no unmatched eventDates.
+    assert data.photo_stats.images_returned == 3
+    assert data.photo_stats.videos_returned == 1
+    assert data.photo_stats.matched_dives == 2
+    assert data.photo_stats.unmatched_event_dates == []
+    assert data.photo_stats.download_failures == []
+
+
+async def test_build_data_skips_dive_photo_url_when_download_failed(
+    fake_api, tmp_path, load_fixture
+):
+    """If the cache says a photo isn't on disk, no URL is surfaced for it."""
+    fake_api.get_dive_photos = AsyncMock(return_value=load_fixture("dive_images_graphql"))
+
+    cache = PhotoCache(www_dir=tmp_path, account_short="abcd1234")
+
+    async def fake_download(records, *, session):
+        # Simulate every download failing — empty cached-sizes set per uuid.
+        return {r.image_uuid: set() for r in records}
+
+    cache.download_records = fake_download  # type: ignore[assignment]
+
+    data = await build_data(
+        api=fake_api,
+        current_user_date="2026-05-03",
+        previous_gear_last_modified={},
+        photo_cache=cache,
+        http_session=MagicMock(),
+        profile_id=999000111,
+        year=2026,
+    )
+
+    matched = next(d for d in data.dives if d.id == 10000001)
+    assert matched.photo_count == 2  # eventDate match still recorded
+    assert matched.photos == {"thumb": None, "medium": None, "large": None}
+    # download_failures lists every uuid with no cached sizes (gear + dive).
+    assert len(data.photo_stats.download_failures) >= 3
 
 
 async def test_coordinator_fires_new_dive_event(hass, fake_api):

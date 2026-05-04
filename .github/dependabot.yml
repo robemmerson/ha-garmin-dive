@@ -4,6 +4,12 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    # pytest-homeassistant-custom-component pins these exactly, so any bump
+    # produces an unmergeable PR until upstream rolls. Re-evaluate when
+    # bumping pytest-homeassistant-custom-component.
+    ignore:
+      - dependency-name: pytest
+      - dependency-name: pytest-cov
   - package-ecosystem: github-actions
     directory: "/"
     schedule:

@@ -20,7 +20,36 @@ from .entity import GarminDiveAccountEntity, GarminDiveSubDeviceEntity
 from .gear import days_until_service, is_serviceable
 
 if TYPE_CHECKING:
-    from .coordinator import Dive, GarminDiveCoordinator
+    from .coordinator import Dive, DiveDevice, GarminDiveCoordinator, GearItem
+
+
+def _gear_serial(item: GearItem) -> str | None:
+    detail = item.detail_raw or item.summary_raw
+    sn = detail.get("serialNumber")
+    return str(sn) if sn else None
+
+
+def _matching_device(coordinator: GarminDiveCoordinator, item: GearItem) -> DiveDevice | None:
+    """Return the dive_device whose serial matches this gear item, if any.
+
+    A Descent dive computer is reported by Garmin in both /gear and
+    /dive/devices with the same serial; matching on serial lets us collapse
+    the two into a single HA sub-device (issue #18).
+    """
+    serial = _gear_serial(item)
+    if serial is None:
+        return None
+    for d in coordinator.data.devices:
+        if d.serial_number is not None and str(d.serial_number) == serial:
+            return d
+    return None
+
+
+def _matching_gear(coordinator: GarminDiveCoordinator, serial: str) -> GearItem | None:
+    for g in coordinator.data.gear:
+        if _gear_serial(g) == serial:
+            return g
+    return None
 
 
 def _connect_url(connect_activity_id: int | None) -> str | None:
@@ -269,6 +298,10 @@ class _GearEntityBase(GarminDiveSubDeviceEntity):
         manufacturer = detail.get("brand")
         model = detail.get("model")
         serial = detail.get("serialNumber")
+        device_match = _matching_device(coordinator, item)
+        aliases: tuple[str, ...] = (
+            (f"device_{device_match.serial_number}",) if device_match is not None else ()
+        )
         super().__init__(
             coordinator,
             sub_device_id=str(gear_id),
@@ -277,6 +310,7 @@ class _GearEntityBase(GarminDiveSubDeviceEntity):
             model=model,
             serial_number=str(serial) if serial else None,
             entity_picture=item.photo_local_url,
+            alias_sub_device_ids=aliases,
         )
         self._gear_id = gear_id
 
@@ -475,6 +509,8 @@ class _DiveComputerEntityBase(GarminDiveSubDeviceEntity):
             for d in coordinator.data.devices
             if d.serial_number and str(d.serial_number) == serial
         )
+        gear_match = _matching_gear(coordinator, serial)
+        aliases: tuple[str, ...] = (str(gear_match.gear_id),) if gear_match is not None else ()
         super().__init__(
             coordinator,
             sub_device_id=f"device_{serial}",
@@ -483,6 +519,7 @@ class _DiveComputerEntityBase(GarminDiveSubDeviceEntity):
             model=device_match.product_display_name,
             serial_number=serial,
             entity_picture=device_match.raw.get("imageUrl"),
+            alias_sub_device_ids=aliases,
         )
         self._serial = serial
 

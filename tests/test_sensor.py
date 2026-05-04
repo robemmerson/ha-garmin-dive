@@ -269,3 +269,107 @@ async def test_descent_in_both_lists_yields_one_device(hass, load_fixture):
         "Descent T1 entities point at disjoint device identifiers — "
         f"HA will create duplicate devices. Sets: {identifier_sets}"
     )
+
+
+async def test_t1_dedup_by_ant_channel_when_serials_differ(hass, load_fixture):
+    """Real-world bug: a Descent T1 in /gear/{id} carries a *printed* /
+    short serialNumber (e.g. \"09144\") while /dive/devices reports the
+    full numeric serial (e.g. \"3399109144\"). The two refer to the same
+    physical T1 — proven by a shared `antChannelId`. We must merge them.
+    """
+    gear_summary = [
+        {
+            "gearId": 555002,
+            "name": "Descent T1",
+            "type": "TRANSMITTER",
+            "dateOfFirstUse": "2022-07-29",
+            "status": "ACTIVE",
+            "creationTs": "2022-07-29T00:00:00Z",
+            "lastModifiedTs": "2023-01-01T00:00:00Z",
+            "stats": {"numAssociatedDives": 36, "totalAssociatedDiveTime": 108558.86},
+        }
+    ]
+    gear_details = {
+        555002: {
+            "gearId": 555002,
+            "name": "Descent T1",
+            "type": "TRANSMITTER",
+            "brand": "Garmin",
+            "model": "Descent T1",
+            "serialNumber": "09144",  # short / printed serial
+            "antChannelId": 12345678,
+            "purchaseDate": "2022-07-29",
+            "stats": {"numAssociatedDives": 36, "totalAssociatedDiveTime": 108558.86},
+        }
+    }
+    devices = [
+        {
+            "imageUrl": "https://example.invalid/t1.png",
+            "productDisplayName": "Descent T1",
+            "serialNumber": 3399109144,  # full numeric serial — disagrees with gear
+            "antChannelId": 12345678,  # …but antChannelId agrees
+            "type": "TRANSMITTER",
+            "gearTrackingStatus": "TRACKED",
+            "deviceDismissed": False,
+        }
+    ]
+    data = make_data(
+        summary=load_fixture("dive_summary_full"),
+        devices=devices,
+        gear_summary=gear_summary,
+        gear_details=gear_details,
+    )
+    coord = make_fake_coordinator(hass=hass, data=data)
+
+    entities = build_gear_entities(coord) + build_dive_computer_entities(coord)
+    descent_entities = [
+        e
+        for e in entities
+        if "555002" in (e.unique_id or "") or "3399109144" in (e.unique_id or "")
+    ]
+    assert descent_entities, "expected entities for the Descent T1"
+
+    identifier_sets = [frozenset(e.device_info["identifiers"]) for e in descent_entities]
+    common = set.intersection(*(set(s) for s in identifier_sets))
+    assert common, (
+        "Descent T1 entities point at disjoint device identifiers — "
+        f"HA will create duplicate devices. Sets: {identifier_sets}"
+    )
+
+
+async def test_dive_devices_duplicates_dedup_by_ant_channel(hass, load_fixture):
+    """Garmin's /dive/devices sometimes returns the same physical transmitter
+    twice (one cached entry without serial, one live with serial — or two
+    live entries with different stale serials). We de-dup by antChannelId so
+    the duplicate entry doesn't manifest as a duplicate HA device."""
+    devices = [
+        {
+            "productDisplayName": "Descent T1",
+            "antChannelId": 12345678,
+            "type": "TRANSMITTER",
+            "gearTrackingStatus": "TRACKED",
+            "deviceDismissed": False,
+        },
+        {
+            "productDisplayName": "Descent T1",
+            "serialNumber": 3399109144,
+            "antChannelId": 12345678,
+            "type": "TRANSMITTER",
+            "gearTrackingStatus": "TRACKED",
+            "deviceDismissed": False,
+        },
+        {
+            "productDisplayName": "Descent T1",
+            "serialNumber": 9999999999,  # stale duplicate, same antChannelId
+            "antChannelId": 12345678,
+            "type": "TRANSMITTER",
+            "gearTrackingStatus": "TRACKED",
+            "deviceDismissed": False,
+        },
+    ]
+    data = make_data(summary=load_fixture("dive_summary_full"), devices=devices)
+    coord = make_fake_coordinator(hass=hass, data=data)
+    entities = build_dive_computer_entities(coord)
+    serials = [e._serial for e in entities if hasattr(e, "_serial")]
+    # Exactly one set of dive-computer entities should be emitted, not three.
+    assert len(set(serials)) == 1, f"expected one Descent T1, got serials={serials}"

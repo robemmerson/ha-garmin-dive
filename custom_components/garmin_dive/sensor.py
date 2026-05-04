@@ -29,25 +29,50 @@ def _gear_serial(item: GearItem) -> str | None:
     return str(sn) if sn else None
 
 
-def _matching_device(coordinator: GarminDiveCoordinator, item: GearItem) -> DiveDevice | None:
-    """Return the dive_device whose serial matches this gear item, if any.
+def _gear_ant_channel(item: GearItem) -> str | None:
+    detail = item.detail_raw or item.summary_raw
+    ant = detail.get("antChannelId")
+    return str(ant) if ant is not None else None
 
-    A Descent dive computer is reported by Garmin in both /gear and
-    /dive/devices with the same serial; matching on serial lets us collapse
-    the two into a single HA sub-device (issue #18).
+
+def _device_ant_channel(device: DiveDevice) -> str | None:
+    ant = device.raw.get("antChannelId")
+    return str(ant) if ant is not None else None
+
+
+def _matching_device(coordinator: GarminDiveCoordinator, item: GearItem) -> DiveDevice | None:
+    """Return the dive_device representing the same physical item as `item`.
+
+    Match strategy:
+      - For dive computers (Mk2i etc.) `serialNumber` is the only identifier
+        the two endpoints share.
+      - For transmitters (Descent T1) `/gear/{id}` returns the *printed*
+        short serial while `/dive/devices` returns the full numeric serial,
+        so they don't compare equal. The two endpoints DO agree on
+        `antChannelId`, which is the authoritative join key for ANT+
+        accessories.
+    Try serial first, then antChannelId.
     """
     serial = _gear_serial(item)
-    if serial is None:
-        return None
+    ant = _gear_ant_channel(item)
     for d in coordinator.data.devices:
-        if d.serial_number is not None and str(d.serial_number) == serial:
+        if serial is not None and d.serial_number is not None and str(d.serial_number) == serial:
+            return d
+        if ant is not None and _device_ant_channel(d) == ant:
             return d
     return None
 
 
-def _matching_gear(coordinator: GarminDiveCoordinator, serial: str) -> GearItem | None:
+def _matching_gear(
+    coordinator: GarminDiveCoordinator,
+    *,
+    serial: str | None = None,
+    ant_channel: str | None = None,
+) -> GearItem | None:
     for g in coordinator.data.gear:
-        if _gear_serial(g) == serial:
+        if serial is not None and _gear_serial(g) == serial:
+            return g
+        if ant_channel is not None and _gear_ant_channel(g) == ant_channel:
             return g
     return None
 
@@ -509,7 +534,11 @@ class _DiveComputerEntityBase(GarminDiveSubDeviceEntity):
             for d in coordinator.data.devices
             if d.serial_number and str(d.serial_number) == serial
         )
-        gear_match = _matching_gear(coordinator, serial)
+        gear_match = _matching_gear(
+            coordinator,
+            serial=serial,
+            ant_channel=_device_ant_channel(device_match),
+        )
         aliases: tuple[str, ...] = (str(gear_match.gear_id),) if gear_match is not None else ()
         super().__init__(
             coordinator,
@@ -584,14 +613,24 @@ def build_dive_computer_entities(
     entities: list[SensorEntity] = []
     if not coordinator.data:
         return entities
-    seen: set[str] = set()
+    # Garmin's /dive/devices occasionally returns the same physical device
+    # twice — typically a cached entry without serial alongside a live one,
+    # but stale entries with mismatched serials also occur. antChannelId is
+    # the authoritative key for ANT+ accessories; serialNumber for the rest.
+    seen_serial: set[str] = set()
+    seen_ant: set[str] = set()
     for device in coordinator.data.devices:
         if device.serial_number is None:
-            continue  # skip cached/duplicate entries without a serial
+            continue  # need a serial to construct the dive-computer entities
         serial = str(device.serial_number)
-        if serial in seen:
+        if serial in seen_serial:
             continue
-        seen.add(serial)
+        ant = _device_ant_channel(device)
+        if ant is not None and ant in seen_ant:
+            continue
+        seen_serial.add(serial)
+        if ant is not None:
+            seen_ant.add(ant)
         entities.append(DiveComputerGearTrackingSensor(coordinator, serial=serial))
         entities.append(DiveComputerSerialSensor(coordinator, serial=serial))
         if device.raw.get("partNumber"):

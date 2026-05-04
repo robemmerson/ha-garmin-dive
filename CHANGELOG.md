@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.5](https://github.com/robemmerson/ha-garmin-dive/compare/v0.3.4...v0.3.5) (2026-05-04)
+
+
+### Bug Fixes
+
+* **sensor:** merge Descent T1 by antChannelId, not just serial ([f5a2081](https://github.com/robemmerson/ha-garmin-dive/commit/f5a2081ddfedced10636a98bb57eccfd58d69494))
+* **sensor:** merge Descent T1 by antChannelId, not just serial ([7dff7b7](https://github.com/robemmerson/ha-garmin-dive/commit/7dff7b78f61daf6b66b4b72e5b15c836491b8559))
+
 ## [0.3.4](https://github.com/robemmerson/ha-garmin-dive/compare/v0.3.3...v0.3.4) (2026-05-04)
 
 

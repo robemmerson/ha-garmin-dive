@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import aiohttp
 from ha_garmin import GarminAuth
@@ -45,6 +46,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     api = GarminDiveClient(session=session, get_token=_get_token)
     auth = GarminDiveAuth.from_entry_data(dict(entry.data), ha_auth=ha_auth, api=api)
+
+    # Garmin rotates the DIVE refresh token on every refresh. Persist the new
+    # pair back to entry.data each time it changes, otherwise a restart reloads
+    # the original (now-invalidated) token and setup fails with HTTP 400.
+    def _persist_tokens(token_data: dict[str, Any]) -> None:
+        hass.config_entries.async_update_entry(
+            entry, data={**entry.data, **token_data}
+        )
+
+    auth.set_token_listener(_persist_tokens)
 
     # Re-load the persisted ha-garmin session so reauth (or DIVE-token
     # refresh fallback) doesn't always require re-typing the password.

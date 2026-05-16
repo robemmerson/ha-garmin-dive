@@ -11,8 +11,10 @@ from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
+from .auth import GarminDiveAuthExpired
 from .const import DOMAIN, EVENT_NEW_DIVE, EVENT_SERVICE_DUE
 from .gear import GearSnapshot, detect_service_status_flips, needs_detail_fetch
 from .photos import PhotoCache, PhotoRecord
@@ -564,6 +566,10 @@ class GarminDiveCoordinator(DataUpdateCoordinator[CoordinatorData]):
                 profile_id=self._auth.profile_id,
                 year=date.today().year,
             )
+        except GarminDiveAuthExpired as err:
+            # Dead credentials never recover by retrying — hand off to the
+            # reauth flow instead of looping ConfigEntryNotReady forever.
+            raise ConfigEntryAuthFailed(str(err)) from err
         except Exception as err:
             raise UpdateFailed(f"Garmin Dive refresh failed: {err}") from err
 

@@ -9,7 +9,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from ha_garmin import GarminMFARequired
 
-from custom_components.garmin_dive.auth import GarminDiveAuth
+from custom_components.garmin_dive.api import GarminDiveTokenRefreshError
+from custom_components.garmin_dive.auth import GarminDiveAuth, GarminDiveAuthExpired
 
 
 def _token_response(access: str = "dive-access", expires_in: int = 86399) -> dict:
@@ -133,15 +134,88 @@ async def test_serialize_round_trip():
     assert data["session_path"] == "/tmp/garmin_dive/999000111.json"
 
 
-async def test_refresh_raises_runtime_error_when_no_refresh_token():
-    """If the auth has no Dive refresh token, _refresh raises rather than silently failing."""
-    auth = GarminDiveAuth(ha_auth=MagicMock(), api=MagicMock())
+async def test_refresh_raises_auth_expired_when_unrecoverable():
+    """No Dive refresh token AND a dead Connect session => GarminDiveAuthExpired."""
+    fake_ha = MagicMock()
+    fake_ha.refresh_session = AsyncMock(return_value=False)
+    fake_ha.di_token = None  # Connect session also gone
+
+    auth = GarminDiveAuth(ha_auth=fake_ha, api=MagicMock())
     auth._dive_access_token = None
     auth._dive_refresh_token = None
     auth._dive_expires_at = 0
 
-    with pytest.raises(RuntimeError, match="reauth required"):
+    with pytest.raises(GarminDiveAuthExpired, match="reauthentication required"):
         await auth.get_dive_token()
+
+
+async def test_invalid_grant_recovers_via_connect_reexchange():
+    """A 400 invalid_grant on refresh re-mints the DIVE token from the Connect session."""
+    fake_ha = MagicMock()
+    fake_ha.refresh_session = AsyncMock(return_value=True)
+    fake_ha.di_token = "connect-bearer"
+
+    api = MagicMock()
+    api.refresh_dive_token = AsyncMock(
+        side_effect=GarminDiveTokenRefreshError(400, '{"error":"invalid_grant"}')
+    )
+    api.exchange_dive_audience = AsyncMock(
+        return_value=_token_response(access="reexchanged")
+    )
+
+    auth = GarminDiveAuth(ha_auth=fake_ha, api=api)
+    auth._dive_access_token = "stale"
+    auth._dive_refresh_token = "dead-rt"
+    auth._dive_expires_at = time.time() + 60  # within skew -> forces refresh
+
+    token = await auth.get_dive_token()
+    assert token == "reexchanged"
+    api.exchange_dive_audience.assert_awaited_once_with(connect_bearer="connect-bearer")
+
+
+async def test_transient_refresh_error_is_reraised_not_reexchanged():
+    """A 5xx from diauth is transient: propagate it, don't burn the Connect session."""
+    fake_ha = MagicMock()
+    fake_ha.refresh_session = AsyncMock()
+
+    api = MagicMock()
+    api.refresh_dive_token = AsyncMock(
+        side_effect=GarminDiveTokenRefreshError(503, "Service Unavailable")
+    )
+    api.exchange_dive_audience = AsyncMock()
+
+    auth = GarminDiveAuth(ha_auth=fake_ha, api=api)
+    auth._dive_access_token = "stale"
+    auth._dive_refresh_token = "rt"
+    auth._dive_expires_at = time.time() + 60
+
+    with pytest.raises(GarminDiveTokenRefreshError):
+        await auth.get_dive_token()
+    api.exchange_dive_audience.assert_not_awaited()
+
+
+async def test_token_listener_fires_with_rotated_pair():
+    """_apply_dive_token notifies the listener so rotated tokens can be persisted."""
+    api = MagicMock()
+    api.refresh_dive_token = AsyncMock(
+        return_value={
+            "access_token": "rotated",
+            "refresh_token": "new-rt",
+            "expires_in": 3600,
+        }
+    )
+    auth = GarminDiveAuth(ha_auth=MagicMock(), api=api)
+    auth._dive_access_token = "old"
+    auth._dive_refresh_token = "old-rt"
+    auth._dive_expires_at = time.time() + 60
+
+    seen: list[dict] = []
+    auth.set_token_listener(seen.append)
+
+    await auth.get_dive_token()
+    assert len(seen) == 1
+    assert seen[0]["dive_access_token"] == "rotated"
+    assert seen[0]["dive_refresh_token"] == "new-rt"
 
 
 async def test_refresh_updates_expires_at():

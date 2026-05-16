@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import os
 import time
 from collections.abc import Awaitable, Callable
@@ -10,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 
 from ha_garmin import GarminAuth, GarminMFARequired
 
+from .api import GarminDiveTokenRefreshError
 from .const import TOKEN_REFRESH_SKEW_SECONDS
 
 if TYPE_CHECKING:
@@ -24,6 +26,17 @@ def _chmod_user_only(path: str) -> None:
 
 
 MfaProvider = Callable[[], Awaitable[str]]
+TokenListener = Callable[[dict[str, Any]], None]
+
+
+class GarminDiveAuthExpired(Exception):
+    """The DIVE token pair is dead and could not be recovered.
+
+    Raised when the stored DIVE refresh token is rejected *and* the persisted
+    ha-garmin Connect session cannot mint a replacement. The integration must
+    surface this as ``ConfigEntryAuthFailed`` so Home Assistant starts the
+    reauth flow rather than retrying a credential that will never work.
+    """
 
 
 class GarminDiveAuth:
@@ -39,6 +52,15 @@ class GarminDiveAuth:
         self._profile_display_name: str | None = None
         self._session_path: str | None = None
         self._refresh_lock: asyncio.Lock | None = None
+        # Invoked with serialize() output whenever the DIVE token pair changes,
+        # so the caller can persist rotated tokens back to entry.data. Garmin
+        # rotates the refresh token on every refresh; without this, a restart
+        # reloads a stale token and setup fails with HTTP 400.
+        self._token_listener: TokenListener | None = None
+
+    def set_token_listener(self, listener: TokenListener | None) -> None:
+        """Register a callback fired after every DIVE token change."""
+        self._token_listener = listener
 
     # --- Login / MFA --------------------------------------------------------
 
@@ -92,11 +114,50 @@ class GarminDiveAuth:
             ):
                 return self._dive_access_token
             if not self._dive_refresh_token:
-                raise RuntimeError("No Dive refresh token available; reauth required")
-            token_resp = await self._api.refresh_dive_token(refresh_token=self._dive_refresh_token)
+                # No usable refresh token — fall straight through to the
+                # Connect-session re-exchange rather than dead-ending.
+                token_resp = await self._reexchange_via_connect()
+            else:
+                try:
+                    token_resp = await self._api.refresh_dive_token(
+                        refresh_token=self._dive_refresh_token
+                    )
+                except GarminDiveTokenRefreshError as err:
+                    if not err.is_invalid_grant:
+                        # Transient (e.g. 5xx) — let the coordinator retry
+                        # with the existing refresh token still intact.
+                        raise
+                    # Dead/rotated DIVE refresh token: try to mint a new one
+                    # from the still-valid persisted Connect session before
+                    # forcing the user to reauthenticate.
+                    token_resp = await self._reexchange_via_connect()
             self._apply_dive_token(token_resp)
             assert self._dive_access_token is not None
             return self._dive_access_token
+
+    async def _reexchange_via_connect(self) -> dict[str, Any]:
+        """Re-mint a DIVE token from the persisted ha-garmin Connect session.
+
+        This is the same audience exchange ``login()`` performs, but driven by
+        the saved Connect refresh token instead of a fresh password login. If
+        the Connect session is also dead, there is nothing left to do but ask
+        the user to reauthenticate.
+        """
+        with contextlib.suppress(Exception):
+            await self._ha.refresh_session()
+        connect_token = self._ha.di_token
+        if not connect_token:
+            raise GarminDiveAuthExpired(
+                "DIVE refresh token rejected and the stored Garmin Connect "
+                "session is no longer valid; reauthentication required"
+            )
+        try:
+            return await self._api.exchange_dive_audience(connect_bearer=connect_token)
+        except Exception as err:
+            raise GarminDiveAuthExpired(
+                "DIVE refresh token rejected and the Connect audience "
+                "exchange failed; reauthentication required"
+            ) from err
 
     def _apply_dive_token(self, resp: dict[str, Any]) -> None:
         self._dive_access_token = resp["access_token"]
@@ -106,6 +167,10 @@ class GarminDiveAuth:
         if new_refresh:
             self._dive_refresh_token = new_refresh
         self._dive_expires_at = time.time() + int(resp["expires_in"])
+        # Persist the (possibly rotated) token pair so a later restart doesn't
+        # reload a refresh token Garmin has already invalidated.
+        if self._token_listener is not None:
+            self._token_listener(self.serialize())
 
     # --- Persistence --------------------------------------------------------
 

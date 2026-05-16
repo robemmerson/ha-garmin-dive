@@ -32,6 +32,31 @@ from .const import (
 GetTokenFn = Callable[[], Awaitable[str]]
 
 
+class GarminDiveTokenRefreshError(Exception):
+    """The diauth token endpoint rejected a refresh_token grant.
+
+    Carries the HTTP status and (truncated) response body so callers can
+    distinguish a dead/rotated refresh token (`invalid_grant`, HTTP 400) from
+    a transient server-side failure (5xx) and react accordingly.
+    """
+
+    def __init__(self, status: int, body: str) -> None:
+        self.status = status
+        # Keep a bounded slice — the OAuth error JSON is tiny; this guards
+        # against a proxy returning a huge HTML error page.
+        self.body = body[:500]
+        super().__init__(f"diauth refresh returned HTTP {status}: {self.body}")
+
+    @property
+    def is_invalid_grant(self) -> bool:
+        """True when the refresh token is expired/revoked/already-rotated.
+
+        Per RFC 6749 §5.2 the endpoint returns HTTP 400 with an
+        ``{"error": "invalid_grant"}`` body in this case.
+        """
+        return self.status == 400 and "invalid_grant" in self.body
+
+
 class GarminDiveClient:
     """Async HTTP client for the Dive REST + GraphQL endpoints on gcs.garmin.com."""
 
@@ -190,7 +215,11 @@ class GarminDiveClient:
                 "X-Lang": APP_X_LANG,
             },
         ) as resp:
-            resp.raise_for_status()
+            if resp.status >= 400:
+                # Capture the OAuth error body before raising — raise_for_status
+                # would discard it, and that body is the only signal telling us
+                # whether to reauth (invalid_grant) or just retry (5xx).
+                raise GarminDiveTokenRefreshError(resp.status, await resp.text())
             return await resp.json(content_type=None)
 
     async def get_social_profile(self, *, connect_bearer: str) -> dict[str, Any]:

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.7](https://github.com/robemmerson/ha-garmin-dive/compare/v0.3.6...v0.3.7) (2026-05-16)
+
+
+### Bug Fixes
+
+* **auth:** persist rotated DIVE tokens and self-heal dead refresh ([0cd3d1a](https://github.com/robemmerson/ha-garmin-dive/commit/0cd3d1af429b90317bf2f425bf3924836b71c3d0))
+* **auth:** persist rotated DIVE tokens and self-heal dead refresh ([545f476](https://github.com/robemmerson/ha-garmin-dive/commit/545f47679e2f7d21ec290555b74abc8c66d3f4b4))
+
 ## [0.3.6](https://github.com/robemmerson/ha-garmin-dive/compare/v0.3.5...v0.3.6) (2026-05-04)
 
 

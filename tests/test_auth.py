@@ -159,9 +159,7 @@ async def test_invalid_grant_recovers_via_connect_reexchange():
     api.refresh_dive_token = AsyncMock(
         side_effect=GarminDiveTokenRefreshError(400, '{"error":"invalid_grant"}')
     )
-    api.exchange_dive_audience = AsyncMock(
-        return_value=_token_response(access="reexchanged")
-    )
+    api.exchange_dive_audience = AsyncMock(return_value=_token_response(access="reexchanged"))
 
     auth = GarminDiveAuth(ha_auth=fake_ha, api=api)
     auth._dive_access_token = "stale"

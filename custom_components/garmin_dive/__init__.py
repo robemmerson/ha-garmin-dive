@@ -51,9 +51,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # pair back to entry.data each time it changes, otherwise a restart reloads
     # the original (now-invalidated) token and setup fails with HTTP 400.
     def _persist_tokens(token_data: dict[str, Any]) -> None:
-        hass.config_entries.async_update_entry(
-            entry, data={**entry.data, **token_data}
-        )
+        hass.config_entries.async_update_entry(entry, data={**entry.data, **token_data})
 
     auth.set_token_listener(_persist_tokens)
 

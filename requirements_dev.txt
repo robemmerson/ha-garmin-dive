@@ -9,5 +9,5 @@ ruff>=0.15.12
 mypy>=2.0.0
 codespell>=2.4.2
 pre-commit>=4.6.0
-ha-garmin>=0.1.19,<0.2
+ha-garmin>=0.1.22,<0.2
 freezegun>=1.4

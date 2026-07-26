@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0](https://github.com/robemmerson/ha-garmin-dive/compare/v0.3.7...v1.0.0) (2026-07-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* require Python 3.14 and Home Assistant 2026.3.0 ([#64](https://github.com/robemmerson/ha-garmin-dive/issues/64))
+
+### Features
+
+* require Python 3.14 and Home Assistant 2026.3.0 ([#64](https://github.com/robemmerson/ha-garmin-dive/issues/64)) ([946782d](https://github.com/robemmerson/ha-garmin-dive/commit/946782df4f1e8baafe55fc7ae73ee8e30d527379))
+
 ## [0.3.7](https://github.com/robemmerson/ha-garmin-dive/compare/v0.3.6...v0.3.7) (2026-05-16)
 
 

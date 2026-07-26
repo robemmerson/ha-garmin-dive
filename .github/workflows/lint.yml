@@ -13,7 +13,9 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: "3.14"
-      - run: pip install ruff
+      # Install ruff at the version pinned in requirements_dev.txt rather than
+      # whatever is newest, so a ruff release cannot turn this job red on its own.
+      - run: pip install -c requirements_dev.txt ruff
       - run: ruff check .
       - run: ruff format --check .
 

@@ -55,4 +55,9 @@ addopts = "-ra --strict-markers"
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning:homeassistant.*",
+    # aresponses 3.0.0 (its latest release) still calls the deprecated
+    # asyncio.iscoroutinefunction. Under Python 3.14 that warning is raised as an
+    # error inside the mock server's request handler, so aiohttp turns every
+    # aresponses-backed request into a 500. Drop this once aresponses ships a fix.
+    "ignore:'asyncio.iscoroutinefunction' is deprecated:DeprecationWarning",
 ]

@@ -18,6 +18,8 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-      # When release-please publishes a Release, the existing release.yml
-      # workflow takes over (it triggers on `release: published`) to build
-      # and attach the HACS zip artifact.
+      # This is the whole release process. release-please tags the commit,
+      # publishes the GitHub Release, and syncs the version into
+      # pyproject.toml and manifest.json via `extra-files` in
+      # release-please-config.json. HACS installs from the repository source,
+      # so no release artifact is built or attached.

@@ -10,7 +10,7 @@ authors = [{ name = "Rob Emmerson" }]
 [tool.ruff]
 target-version = "py313"
 line-length = 100
-extend-exclude = ["tests/fixtures"]
+extend-exclude = ["tests/fixtures", "docs"]
 
 [tool.ruff.lint]
 select = [

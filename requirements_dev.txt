@@ -5,7 +5,7 @@ pytest-homeassistant-custom-component>=0.13.348,<0.13.358
 pytest-cov>=7.0
 syrupy>=4.6
 aresponses>=3.0
-ruff==0.16.0
+ruff==0.16.1
 mypy>=2.3.0
 codespell>=2.4.3
 pre-commit>=4.6.1
